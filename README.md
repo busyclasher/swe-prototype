@@ -17,10 +17,37 @@ Other scripts:
 
 | Command | Purpose |
 |---|---|
-| `npm test` | 19 unit tests for the business logic (allocation rules, Workload, late Availability, demo scenarios) |
+| `npm test` | 20 unit tests for the business logic (allocation rules, Workload, late Availability, demo scenarios) |
 | `npm run build` | Production build into `dist/` |
 | `npm run preview` | Serve the production build |
-| `npm run screenshots` | Run `npm run build` first. Drives Microsoft Edge/Chrome through every use case (51 checks), checks layouts at 1440/768/390 px for horizontal overflow, and writes `docs/screenshots/` |
+| `npm run screenshots` | Run `npm run build` first. Drives Microsoft Edge/Chrome through every use case (52 checks), checks layouts at 1440/768/390 px for horizontal overflow, and writes `docs/screenshots/`. Set `SCREENSHOT_DIR` to save elsewhere. |
+
+## Deploy to Vercel
+
+The root `vercel.json` configures the Vite preset, installs with `npm ci`, runs unit tests before building, and serves `dist/`. No environment variables, backend services, or database setup are required.
+
+### Import from Git
+
+1. Commit and push the prepared source, including `package-lock.json` and `vercel.json`, to your Git repository.
+2. In Vercel, choose **Add New → Project** and import the repository.
+3. Use the repository root as the Root Directory and **Vite** as the Framework Preset. Keep the build settings from `vercel.json`.
+4. Deploy, then open the generated URL and sign in with the demonstration accounts below.
+
+### Deploy from the command line
+
+From the repository root, run:
+
+```bash
+npx vercel          # Link a project and create a preview deployment
+# After checking the preview:
+npx vercel --prod   # Publish a production deployment
+```
+
+The app uses hash routes such as `/#/manager/allocation`, so no SPA rewrite is needed. Use links containing `/#/`; `/manager/allocation` alone is not an app route.
+
+After deployment, check Teacher login and Job rejection, Manager allocation of a pending Job, mobile navigation, and **Demo tools → Reset demo data**. Refresh a page with a hash route to confirm that it returns to sign-in successfully. Data and sessions are held in memory: each visitor gets an independent demo, and refreshing restores the seed data.
+
+See [Vercel's Vite deployment guide](https://vercel.com/docs/frameworks/frontend/vite) and [configuration reference](https://vercel.com/docs/project-configuration/vercel-json).
 
 ## Demonstration accounts
 

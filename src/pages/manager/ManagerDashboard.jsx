@@ -35,7 +35,7 @@ export default function ManagerDashboard() {
         <MetricCard label="Teachers" value={rows.length} hint="Active Teacher Profiles" icon="users" />
         <MetricCard label="Allocated this week" value={fmtHours(total)} hint={`${rows.reduce((s, r) => s + r.jobCount, 0)} Jobs`} icon="clock" />
         <MetricCard label={`Above ${WORKLOAD_THRESHOLD_HOURS} hours`} value={over.length} hint={over.length ? 'Needs attention' : 'No Teachers above threshold'} icon="alert" tone={over.length ? 'danger' : undefined} />
-        <MetricCard label="Unallocated Jobs this week" value={unallocated.length} hint={unallocated.length ? 'Allocate on the Job Allocation page' : 'All Jobs allocated'} icon="ban" tone={unallocated.length ? 'warning' : undefined} />
+        <MetricCard label="Unallocated Jobs this week" value={unallocated.length} hint={unallocated.length ? <ButtonLink to="/manager/allocation" size="sm" variant="ghost" icon="arrowRight" className="metric-link">Review pending Jobs</ButtonLink> : 'All Jobs allocated'} icon="ban" tone={unallocated.length ? 'warning' : undefined} />
       </div>
 
       <div className="grid-2">

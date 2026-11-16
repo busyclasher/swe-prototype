@@ -19,7 +19,7 @@ const CANDIDATES = [
 const executablePath = CANDIDATES.find((p) => existsSync(p));
 if (!executablePath) throw new Error('No Chromium-based browser found. Set BROWSER_PATH.');
 
-const OUT = 'docs/screenshots';
+const OUT = process.env.SCREENSHOT_DIR || 'docs/screenshots';
 mkdirSync(OUT, { recursive: true });
 const VIEWPORTS = { desktop: { width: 1440, height: 900 }, tablet: { width: 768, height: 1024 }, mobile: { width: 390, height: 844 } };
 
@@ -271,6 +271,24 @@ await step('Rejected Job appears as Unallocated to the Manager and can be loaded
   const opts = await form.getByLabel('Job').locator('option').allTextContents();
   if (!opts.some((o) => o.startsWith(rejectedJobId))) throw new Error(`${rejectedJobId} not offered as Unallocated`);
   await form.getByLabel('Job').selectOption({ label: opts.find((o) => o.startsWith(rejectedJobId)) });
+});
+
+await step('Pending Jobs can be assigned directly and reset clears local state', async () => {
+  const pending = page.locator('.pending-job', { hasText: 'Guitar' });
+  await pending.click();
+  const form = page.locator('form', { hasText: 'Validate and allocate Job' });
+  if (await form.getByLabel('Teacher', { exact: false }).inputValue()) throw new Error('Loading a Job retained a stale Teacher');
+  await form.getByLabel('Teacher', { exact: false }).selectOption('T08');
+  await form.getByRole('button', { name: 'Validate and allocate Job' }).click();
+  await page.locator('.alert-success', { hasText: 'Isaac Koh' }).waitFor();
+  if (await pending.count()) throw new Error('Allocated Job still pending');
+  if (await form.getByLabel('Start time').inputValue()) throw new Error('Success did not clear the form');
+  await page.getByRole('button', { name: /Demo tools/ }).click();
+  await page.getByRole('menuitem', { name: /Reset demo data/ }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Reset demo data' }).click();
+  await expectText(page, 'No allocation submitted yet');
+  if (await page.locator('.compare-card').count()) throw new Error('Reset retained comparison selections');
+  if (await page.locator('.pending-job').count() !== 2) throw new Error('Reset did not restore pending Jobs');
 });
 
 await step('Manager cannot open IT Administrator pages (NFR-09)', async () => {

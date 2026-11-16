@@ -31,6 +31,7 @@ const denied = (roles) => ({
 
 export function StoreProvider({ children }) {
   const [data, setData] = useState(createSeedData);
+  const [resetVersion, setResetVersion] = useState(0);
   const [session, setSession] = useState(null);
   const [loginNotice, setLoginNotice] = useState(null);
   const [lockouts, setLockouts] = useState({}); // username -> { failures, lockedUntil }
@@ -246,6 +247,7 @@ export function StoreProvider({ children }) {
   const allocateJob = useCallback((draft, weekStart) => {
     const deny = requireRole(ROLES.MANAGER);
     if (deny) return deny;
+    if (draft.date < DEMO_TODAY) return { ok: false, error: 'The Job date cannot be in the past.' };
     if (!inWeek(draft.date, weekStart)) return { ok: false, error: 'The Job date must be inside the selected week.' };
     const t0 = performance.now();
     const d = dataRef.current;
@@ -318,6 +320,7 @@ export function StoreProvider({ children }) {
   const resetDemoData = useCallback(() => {
     const fresh = createSeedData();
     commit(fresh);
+    setResetVersion((v) => v + 1);
     setLocks({});
     const s = sessionRef.current;
     if (s && !fresh.accounts.some((a) => a.id === s.accountId)) {
@@ -330,6 +333,7 @@ export function StoreProvider({ children }) {
   const value = useMemo(
     () => ({
       data,
+      resetVersion,
       session,
       loginNotice,
       lockouts,
@@ -347,7 +351,7 @@ export function StoreProvider({ children }) {
       resetDemoData,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [data, session, loginNotice, lockouts],
+    [data, resetVersion, session, loginNotice, lockouts],
   );
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

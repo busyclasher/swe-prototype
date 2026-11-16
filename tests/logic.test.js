@@ -126,3 +126,17 @@ test('Availability input validation', () => {
   assert.deepEqual(validateAvailabilityInput({ date: '2026-12-01', start: h(11), end: h(13) }, existing, 'A'), {}, 'editing itself');
   assert.deepEqual(validateAvailabilityInput({ date: '2026-12-01', start: h(12), end: h(13) }, existing), {}, 'touching is fine');
 });
+
+test('every seeded Unallocated Job can be assigned without changing its details', () => {
+  const data = createSeedData();
+  const pending = data.jobs.filter((j) => !isAllocated(j));
+  assert.ok(pending.length > 0);
+  for (const job of pending) {
+    const teacher = data.teachers.find((t) => validateAllocation({ ...job, teacherId: t.id }, data).ok);
+    assert.ok(teacher, `${job.id} has no eligible Teacher`);
+    // The presentation assigns pending Jobs in sequence, so check the next
+    // one against the updated schedule as well.
+    job.teacherId = teacher.id;
+    job.status = 'ALLOCATED';
+  }
+});

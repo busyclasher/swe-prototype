@@ -14,6 +14,7 @@ import { WorkloadBadge } from './ManagerDashboard.jsx';
 import { useStore } from '../../state/store.jsx';
 import { CURRENT_WEEK_START, DEMO_TODAY, JOB_MINUTES, MAX_COMPARE } from '../../config.js';
 import { fmtDate, fmtDateLong, fmtDateShort, fmtHours, fmtRange, fmtTime, fmtWeek, inWeek, timeOptions, weekDates } from '../../lib/time.js';
+import { validateAllocation } from '../../lib/validation.js';
 import { JOB_STATUS, byDateTime, exceedsThreshold, isAllocated, teacherJobsInWeek, weeklyHours } from '../../lib/workload.js';
 
 const TIMES = timeOptions(6 * 60, 22 * 60, 15);
@@ -169,15 +170,23 @@ export default function JobAllocation() {
     }
   };
 
-  const setField = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+  const setField = (k, v) => {
+    setForm((f) => ({ ...f, [k]: v }));
+    setErrors((e) => ({ ...e, [k]: undefined }));
+    setOutcome(null);
+    if (k === 'date') setLocationDate(v);
+  };
 
   const loadJob = (jobId) => {
     if (!jobId) {
-      setForm((f) => ({ ...f, jobId: '' }));
+      setForm(emptyForm(firstDay(week)));
+      setOutcome(null);
+      setErrors({});
       return;
     }
     const j = data.jobs.find((x) => x.id === jobId);
-    setForm((f) => ({ ...f, jobId, date: j.date, start: String(j.start), instrument: j.instrument, studioId: j.studioId }));
+    setForm((f) => ({ ...f, jobId, date: j.date, start: String(j.start), instrument: j.instrument, studioId: j.studioId, teacherId: '' }));
+    setLocationDate(j.date);
     setOutcome(null);
     setErrors({});
     formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -199,6 +208,7 @@ export default function JobAllocation() {
     setErrors(req);
     if (Object.keys(req).length) {
       setOutcome(null);
+      requestAnimationFrame(() => formRef.current?.querySelector('[aria-invalid="true"]')?.focus());
       return;
     }
     const draft = { ...form, start: Number(form.start) };
@@ -210,7 +220,7 @@ export default function JobAllocation() {
     setOutcome({ ...res, draft });
     if (res.ok) {
       setLastJobId(res.job.id);
-      setForm((f) => ({ ...f, jobId: '' }));
+      setForm(emptyForm(firstDay(week)));
       setFilters((f) => ({ ...f, day: res.job.date }));
       toast('success', `Job ${res.job.id} allocated to ${teacherName(res.job.teacherId)}.`);
     } else {
@@ -227,13 +237,18 @@ export default function JobAllocation() {
     .filter((j) => filters.status === 'ALL' || j.status === filters.status)
     .sort((a, b) => byDateTime(a, b) || a.studioId.localeCompare(b.studioId));
 
+  const candidateChecks = useMemo(() => {
+    if (!form.date || form.start === '' || !form.instrument || !form.studioId) return null;
+    return new Map(teachers.map((t) => [t.id, validateAllocation({ ...form, id: form.jobId, start: Number(form.start), teacherId: t.id }, data)]));
+  }, [form, teachers, data]);
+
   const holidayOn = (d) => data.holidays.find((h) => h.date === d);
 
   return (
     <>
       <PageHeader
         title="Job Allocation"
-        description="Allocate Jobs for one week at a time. Compare up to three Teachers, enter the Job details, then submit. Every allocation is checked against the eight allocation rules; you make the final decision."
+        description="Choose a pending Job or create a new one, select a Teacher, then validate and allocate. Compare Teachers below whenever you need more detail."
       />
 
       {/* Step 1: week */}
@@ -251,60 +266,23 @@ export default function JobAllocation() {
         </div>
       </Card>
 
-      {/* Step 2: compare */}
-      <Card
-        className="mt-4"
-        title="2. Compare Teachers"
-        subtitle={`Select up to ${MAX_COMPARE} Teachers · ${compareIds.length} of ${MAX_COMPARE} selected`}
-        actions={compareIds.length > 0 && <Button size="sm" variant="ghost" icon="x" onClick={() => { setCompareIds([]); setCompareMsg(null); }}>Clear</Button>}
-      >
-        <div className="chip-row" aria-label="Teachers to compare">
-          {teachers.map((t) => {
-            const on = compareIds.includes(t.id);
-            const hrs = weeklyHours(data.jobs, t.id, week);
-            return (
-              <button key={t.id} type="button" className={`toggle-chip ${on ? 'on' : ''}`} aria-pressed={on} onClick={() => toggleCompare(t.id)}>
-                {on && <Icon name="check" size={14} />}
-                <span>{t.name}</span>
-                <span className="chip-hours tabular">{fmtHours(hrs)}</span>
-              </button>
-            );
-          })}
-        </div>
-        {compareMsg && <Alert tone="warning" className="mt-3">{compareMsg}</Alert>}
-
-        {compareIds.length > 0 ? (
-          <>
-            <div className="location-picker">
-              <Field label="Location on date">
-                {(p) => (
-                  <select {...p} className="input" value={locationDate} onChange={(e) => setLocationDate(e.target.value)}>
-                    {days.map((d) => <option key={d} value={d}>{fmtDate(d)}{holidayOn(d) ? ' (public holiday)' : ''}</option>)}
-                  </select>
-                )}
-              </Field>
-            </div>
-            <div className={`compare-grid cols-${compareIds.length}`}>
-              {compareIds.map((id) => {
-                const t = teachers.find((x) => x.id === id);
-                return t ? (
-                  <CompareCard key={id} teacher={t} week={week} locationDate={locationDate} data={data} onRemove={() => toggleCompare(id)} onUse={() => chooseTeacher(id)} />
-                ) : null;
-              })}
-            </div>
-          </>
-        ) : (
-          <EmptyState icon="users" title="No Teachers selected">
-            Select up to three Teachers above to compare their Availability, Workload, Job Preference, Location and Profile for this week.
-          </EmptyState>
-        )}
+      <Card className="mt-4" title="Pending allocation" subtitle={`${unallocated.length} Unallocated Job${unallocated.length === 1 ? '' : 's'} this week. Choose one to fill the allocation form.`}
+        actions={<Button variant="secondary" size="sm" icon="plus" onClick={() => { loadJob(''); formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}>New Job</Button>}>
+        {unallocated.length ? <div className="pending-jobs">
+          {unallocated.map((j) => <button type="button" key={j.id} className={`pending-job ${form.jobId === j.id ? 'selected' : ''}`} aria-pressed={form.jobId === j.id} onClick={() => loadJob(j.id)}>
+            <span className="pending-job-icon"><Icon name="jobs" /></span>
+            <span className="pending-job-info"><strong>{j.instrument} · {j.id}</strong><span className="muted small">{fmtDateShort(j.date)} · {fmtRange(j.start, j.end)} · {studioLabel(data.studios, j.studioId)}</span></span>
+            <span className="pending-job-action">{form.jobId === j.id ? 'Selected' : 'Assign Teacher'} <Icon name="arrowRight" size={16} /></span>
+          </button>)}
+        </div> : <EmptyState icon="checkCircle" title="All Jobs allocated for this week">Create a new Job above or select another week.</EmptyState>}
       </Card>
 
-      {/* Step 3: allocate */}
+      {/* Step 2: allocate */}
       <div className="grid-alloc mt-4">
         <div ref={formRef} className="scroll-target">
-          <Card title="3. Job details and allocation" subtitle={`Job length is fixed at ${JOB_MINUTES} minutes`}>
+          <Card title="2. Job details and allocation" subtitle={`Job length is fixed at ${JOB_MINUTES} minutes`}>
             <form onSubmit={submit} noValidate className="stack">
+              {form.jobId && <Alert tone="info" title={`Assigning ${form.jobId}`}>Job details are prefilled. Changes to the date, time, Instrument or Studio will update this Job when you allocate it.</Alert>}
               <Field label="Job" hint={unallocated.length ? `${unallocated.length} Unallocated Job${unallocated.length === 1 ? '' : 's'} in this week` : 'No Unallocated Jobs in this week'}>
                 {(p) => (
                   <select {...p} className="input" value={form.jobId} onChange={(e) => loadJob(e.target.value)}>
@@ -362,12 +340,13 @@ export default function JobAllocation() {
                     <option value="">Select Teacher</option>
                     {teachers.map((t) => (
                       <option key={t.id} value={t.id}>
-                        {t.name} · {fmtHours(weeklyHours(data.jobs, t.id, week))} this week{compareIds.includes(t.id) ? ' · comparing' : ''}
+                        {t.name} · {fmtHours(weeklyHours(data.jobs, t.id, week))} this week{candidateChecks?.get(t.id)?.ok ? ' · All 8 rules pass' : ''}{compareIds.includes(t.id) ? ' · comparing' : ''}
                       </option>
                     ))}
                   </select>
                 )}
               </Field>
+              {candidateChecks && <p className="small muted" aria-live="polite">{[...candidateChecks.values()].filter((r) => r.ok).length} Teachers pass all eight rules for these details. You choose the Teacher; rules are checked again when you allocate.</p>}
               <div className="btn-row">
                 <Button type="submit" icon="allocate">Validate and allocate Job</Button>
                 <Button variant="secondary" onClick={() => { setForm(emptyForm(firstDay(week))); setErrors({}); setOutcome(null); }}>Clear form</Button>
@@ -406,7 +385,7 @@ export default function JobAllocation() {
                 <Alert tone="success" title={`Job ${outcome.job.id} allocated`}>
                   {outcome.job.instrument} with <strong>{teacherName(outcome.job.teacherId)}</strong>, {fmtDateLong(outcome.job.date)},{' '}
                   <span className="tabular">{fmtRange(outcome.job.start, outcome.job.end)}</span>, {studioLabel(data.studios, outcome.job.studioId)}.
-                  The Teacher's Jobs and Workload and the Studio schedule are updated.
+                  The Teacher's Jobs and Workload and the Studio schedule are updated. Choose another pending Job above or start a new Job in the cleared form.
                 </Alert>
                 <details className="mt-3">
                   <summary className="summary">All eight rule checks passed</summary>
@@ -422,6 +401,56 @@ export default function JobAllocation() {
           </Card>
         </div>
       </div>
+
+      {/* Optional comparison */}
+      <Card
+        className="mt-4"
+        title="Compare Teachers (optional)"
+        subtitle={`Select up to ${MAX_COMPARE} Teachers · ${compareIds.length} of ${MAX_COMPARE} selected`}
+        actions={compareIds.length > 0 && <Button size="sm" variant="ghost" icon="x" onClick={() => { setCompareIds([]); setCompareMsg(null); }}>Clear</Button>}
+      >
+        <div className="chip-row" aria-label="Teachers to compare">
+          {teachers.map((t) => {
+            const on = compareIds.includes(t.id);
+            const hrs = weeklyHours(data.jobs, t.id, week);
+            return (
+              <button key={t.id} type="button" className={`toggle-chip ${on ? 'on' : ''}`} aria-pressed={on} onClick={() => toggleCompare(t.id)}>
+                {on && <Icon name="check" size={14} />}
+                <span>{t.name}</span>
+                <span className="chip-hours tabular">{fmtHours(hrs)}</span>
+              </button>
+            );
+          })}
+        </div>
+        {compareMsg && <Alert tone="warning" className="mt-3">{compareMsg}</Alert>}
+
+        {compareIds.length > 0 ? (
+          <>
+            <div className="location-picker">
+              <Field label="Location on date">
+                {(p) => (
+                  <select {...p} className="input" value={locationDate} onChange={(e) => setLocationDate(e.target.value)}>
+                    {days.map((d) => <option key={d} value={d}>{fmtDate(d)}{holidayOn(d) ? ' (public holiday)' : ''}</option>)}
+                  </select>
+                )}
+              </Field>
+            </div>
+            <div className={`compare-grid cols-${compareIds.length}`}>
+              {compareIds.map((id) => {
+                const t = teachers.find((x) => x.id === id);
+                return t ? (
+                  <CompareCard key={id} teacher={t} week={week} locationDate={locationDate} data={data} onRemove={() => toggleCompare(id)} onUse={() => chooseTeacher(id)} />
+                ) : null;
+              })}
+            </div>
+          </>
+        ) : (
+          <EmptyState icon="users" title="No Teachers selected">
+            Select up to three Teachers above to compare their Availability, Workload, Job Preference, Location and Profile for this week.
+          </EmptyState>
+        )}
+      </Card>
+
 
       {/* Schedule */}
       <Card className="mt-4" title="Jobs in the selected week" subtitle="Teacher and Studio schedules. Unallocated Jobs can be loaded into the form.">

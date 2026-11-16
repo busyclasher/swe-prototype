@@ -29,7 +29,7 @@ Every value below comes from the default dataset (demo date Mon 23 Nov 2026).
 
 ## 4. Job Allocation (3 min) – still Manager
 1. **Select week:** This week.
-2. **Compare:** Click Isaac Koh, Gabriel Lim and Hui Min Chua, then try Alice Tan. The prototype refuses with "up to 3 Teachers" (FR-13). Walk through one card: Workload, Availability, Job Preference, Location (set the date to Tue 24 Nov), and Profile (FR-14 to FR-18).
+2. **Compare (optional, below the allocation form):** Click Isaac Koh, Gabriel Lim and Hui Min Chua, then try Alice Tan. The prototype refuses with "up to 3 Teachers" (FR-13). Walk through one card: Workload, Availability, Job Preference, Location (set the date to Tue 24 Nov), and Profile (FR-14 to FR-18).
 3. **Rejections.** For each, fill the form and press *Validate and allocate Job*. Pick at least two:
 
 | Teacher | Date | Start | Instrument | Studio | Broken rule |
@@ -46,7 +46,7 @@ Every value below comes from the default dataset (demo date Mon 23 Nov 2026).
    Each result names the FR, explains the exact reason, and shows the full 8-rule checklist. Nothing is saved.
    *Tip:* the comparison card's "Use in allocation form" fills the Teacher field.
 4. **Success:** Isaac Koh · Wed 25 Nov · 6:00 PM · Guitar · Studio 3. The allocation is confirmed, Isaac's chip goes from 2.0 h to 2.5 h, and the Job list shows "Just allocated". Submit the same again and FR-22 now fails.
-5. *Optional:* Use the *Job* dropdown to load Alice's rejected Unallocated Job and allocate it to someone qualified. Log out.
+5. *Optional:* In **Pending allocation**, choose the Friday Guitar Job (J-2354, 27 Nov, 3:00 PM, Studio 4). Select **Isaac Koh**, whose option shows **All 8 rules pass**, and allocate it. Alice's rejected Monday Voice Job is also visible; loading it demonstrates that a qualified Teacher may still fail Availability (FR-19). Log out.
 
 ## 5. IT Administrator and conclusion (1–2 min) – `it.admin / admin123`
 1. Press *Create account* empty to show the field errors.
@@ -59,7 +59,7 @@ Every value below comes from the default dataset (demo date Mon 23 Nov 2026).
    - Teachers only ever see their own data
    - *Demo tools → Simulate 30-minute inactivity* shows the timeout (NFR-12)
    - five wrong passwords lock the account (NFR-13)
-5. Make clear this is a frontend prototype (see LIMITATIONS.md). **Reset demo data** for questions.
+5. Make clear this is a frontend prototype (see LIMITATIONS.md). **Reset demo data** for questions and before returning to the Manager dashboard: new Teacher accounts have zero hours and change the lowest-three ranking. Reset also clears page selections and validation results.
 
 ## Likely questions
 - *Why does a 30-minute gap still count as continuous teaching?* The rule requires a break of at least 1 hour, so shorter gaps don't end a block (see LIMITATIONS.md, A3).

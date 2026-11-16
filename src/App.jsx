@@ -56,7 +56,7 @@ function NotFound({ role }) {
 }
 
 export default function App() {
-  const { session } = useStore();
+  const { session, resetVersion } = useStore();
   const { path, query } = useHashLocation();
   const route = ROUTES[path];
   const toast = useToast();
@@ -88,7 +88,7 @@ export default function App() {
     title = 'Access denied';
   } else {
     const { Component } = route;
-    body = <Component query={query} />;
+    body = <Component key={`${session.accountId}:${resetVersion}`} query={query} />;
     title = route.title;
   }
   return (

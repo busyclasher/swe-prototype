@@ -197,8 +197,8 @@ export function createSeedData() {
 
   // Jobs that are already Unallocated in the current week (e.g. rejected earlier).
   const unallocated = [
-    { date: addDays(weekStart(DEMO_TODAY), 2), start: h(11), instrument: 'Piano', studioId: 'S4' },
-    { date: addDays(weekStart(DEMO_TODAY), 4), start: h(19), instrument: 'Guitar', studioId: 'S3' },
+    { date: addDays(weekStart(DEMO_TODAY), 2), start: h(9, 30), instrument: 'Piano', studioId: 'S4' },
+    { date: addDays(weekStart(DEMO_TODAY), 4), start: h(15), instrument: 'Guitar', studioId: 'S4' },
   ];
   for (const u of unallocated) {
     jobs.push({ id: `J-${jobSeq++}`, ...u, end: u.start + JOB_MINUTES, teacherId: null, status: JOB_STATUS.UNALLOCATED });
