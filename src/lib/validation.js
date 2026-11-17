@@ -117,7 +117,7 @@ export function validateAllocation(job, data) {
   results.CONTINUOUS_LIMIT =
     blockLen > CONTINUOUS_LIMIT_MINUTES
       ? fail(
-          `This Job would make a continuous teaching block of ${fmtDuration(blockLen)} (${fmtRange(block.start, block.end)}) for ${tName}. The limit is ${fmtDuration(CONTINUOUS_LIMIT_MINUTES)} of continuous teaching, followed by a break of at least ${fmtDuration(MIN_BREAK_MINUTES)}.`,
+          `This Job would exceed the maximum continuous teaching duration: it makes a continuous teaching block of ${fmtDuration(blockLen)} (${fmtRange(block.start, block.end)}) for ${tName}. The limit is ${fmtDuration(CONTINUOUS_LIMIT_MINUTES)}, followed by a break of at least ${fmtDuration(MIN_BREAK_MINUTES)}. Please schedule the required break before continuing.`,
         )
       : pass(`Teaching block would be ${fmtDuration(blockLen)} (${fmtRange(block.start, block.end)}).`);
 
@@ -149,4 +149,34 @@ export function continuousBlockWith(teacherJobsSameDay, start, end) {
     else blocks.push({ ...iv });
   }
   return blocks.find((b) => b.start <= start && b.end >= end);
+}
+
+/**
+ * Continuous teaching blocks for one Teacher on one day (FR-25). Jobs separated
+ * by less than MIN_BREAK_MINUTES belong to the same block. Each block reports
+ * whether it has reached the limit and, if so, the mandatory break window that
+ * must stay free of Jobs.
+ * @param {Array<{start:number,end:number}>} jobsSameDay
+ */
+export function teachingBlocks(jobsSameDay) {
+  const sorted = [...jobsSameDay].sort((a, b) => a.start - b.start);
+  const blocks = [];
+  for (const j of sorted) {
+    const last = blocks[blocks.length - 1];
+    if (last && j.start - last.end < MIN_BREAK_MINUTES) {
+      last.end = Math.max(last.end, j.end);
+      last.jobCount += 1;
+    } else blocks.push({ start: j.start, end: j.end, jobCount: 1 });
+  }
+  return blocks.map((b) => {
+    const minutes = b.end - b.start;
+    const atLimit = minutes >= CONTINUOUS_LIMIT_MINUTES;
+    return {
+      ...b,
+      minutes,
+      atLimit,
+      remaining: Math.max(0, CONTINUOUS_LIMIT_MINUTES - minutes),
+      requiredBreak: atLimit ? { start: b.end, end: b.end + MIN_BREAK_MINUTES } : null,
+    };
+  });
 }

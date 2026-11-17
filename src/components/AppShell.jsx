@@ -10,6 +10,7 @@ export const NAV = {
   TEACHER: [
     { to: '/teacher', label: 'Dashboard', icon: 'home' },
     { to: '/teacher/jobs', label: 'My Jobs', icon: 'jobs' },
+    { to: '/teacher/available', label: 'Available Jobs', icon: 'hand' },
     { to: '/teacher/availability', label: 'Availability', icon: 'calendar' },
     { to: '/teacher/preferences', label: 'Job Preferences', icon: 'sliders' },
   ],
@@ -35,8 +36,12 @@ function initials(name) {
   return name.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
 }
 
+/** Seeded accounts offered by Demo tools → Switch account (presentation helper). */
+const SWITCH_ACCOUNTS = ['alice.tan', 'jamie.lim', 'grace.ho'];
+
 export function DemoTools({ align = 'right' }) {
-  const { resetDemoData, simulateInactivity, session } = useStore();
+  const { data, resetDemoData, simulateInactivity, session, switchAccount } = useStore();
+  const switchable = data.accounts.filter((a) => SWITCH_ACCOUNTS.includes(a.username));
   const toast = useToast();
   const [open, setOpen] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
@@ -70,6 +75,26 @@ export function DemoTools({ align = 'right' }) {
               <Icon name="clock" /> Simulate 30-minute inactivity
             </button>
           )}
+          <div className="menu-sep" role="separator" />
+          <p className="menu-caption">Switch account</p>
+          {switchable.map((a) => (
+            <button
+              key={a.id}
+              type="button"
+              role="menuitem"
+              className="menu-item"
+              disabled={session?.accountId === a.id}
+              aria-current={session?.accountId === a.id ? 'true' : undefined}
+              onClick={() => {
+                setOpen(false);
+                const res = switchAccount(a.username);
+                if (res.ok) toast('info', `Now signed in as ${a.name} (${ROLE_LABELS[a.role]}).`);
+              }}
+            >
+              <Icon name={session?.accountId === a.id ? 'check' : 'user'} /> {a.name} · {ROLE_LABELS[a.role]}
+              {a.username === 'jamie.lim' && <span className="muted small">&nbsp;(no Jobs)</span>}
+            </button>
+          ))}
         </div>
       )}
       <Modal

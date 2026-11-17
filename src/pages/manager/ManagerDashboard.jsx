@@ -1,10 +1,11 @@
 // UC05 Monitor Staff Workload - FR-01, FR-02, FR-03.
 
-import { Badge, ButtonLink, Card, EmptyState, Meter, MetricCard, PageHeader } from '../../components/ui.jsx';
+import { Alert, Badge, ButtonLink, Card, EmptyState, Meter, MetricCard, PageHeader } from '../../components/ui.jsx';
 import { useStore } from '../../state/store.jsx';
 import { CURRENT_WEEK_START, WORKLOAD_THRESHOLD_HOURS } from '../../config.js';
 import { fmtHours, fmtWeek, inWeek } from '../../lib/time.js';
 import { JOB_STATUS, lowestWorkload, weeklyWorkloadRows } from '../../lib/workload.js';
+import { pendingInterests } from '../../lib/interest.js';
 
 export function WorkloadBadge({ over }) {
   return over ? (
@@ -21,6 +22,7 @@ export default function ManagerDashboard() {
   const over = rows.filter((r) => r.overThreshold).sort((a, b) => b.hours - a.hours);
   const total = rows.reduce((s, r) => s + r.hours, 0);
   const unallocated = data.jobs.filter((j) => j.status === JOB_STATUS.UNALLOCATED && inWeek(j.date, CURRENT_WEEK_START));
+  const requests = pendingInterests(data);
   const maxHours = Math.max(WORKLOAD_THRESHOLD_HOURS + 10, ...rows.map((r) => r.hours));
 
   return (
@@ -30,6 +32,13 @@ export default function ManagerDashboard() {
         description={`Allocated Workload for the current week, ${fmtWeek(CURRENT_WEEK_START)}. Threshold: more than ${WORKLOAD_THRESHOLD_HOURS} hours in one week.`}
         actions={<ButtonLink to="/manager/allocation" variant="primary" icon="allocate">Allocate Jobs</ButtonLink>}
       />
+
+      {requests.length > 0 && (
+        <Alert tone="info" title={`${requests.length} Teacher interest request${requests.length === 1 ? '' : 's'} awaiting approval`} className="mb-3">
+          Teachers have indicated interest in Unallocated Jobs.{' '}
+          <a href="#/manager/allocation">Review them on the Job Allocation page</a>.
+        </Alert>
+      )}
 
       <div className="metrics">
         <MetricCard label="Teachers" value={rows.length} hint="Active Teacher Profiles" icon="users" />

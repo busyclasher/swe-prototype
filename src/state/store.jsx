@@ -12,11 +12,12 @@ import {
   LOCKOUT_MS,
   SESSION_TIMEOUT_MS,
 } from '../config.js';
-import { CREATABLE_ROLES, ROLES, ROLE_LABELS } from '../lib/roles.js';
+import { CREATABLE_ROLES, HOME_ROUTE, ROLES, ROLE_LABELS } from '../lib/roles.js';
 import { isLateSubmission, isWithinHorizon, validateAvailabilityInput } from '../lib/availability.js';
 import { validateAllocation } from '../lib/validation.js';
 import { JOB_STATUS, isAllocated } from '../lib/workload.js';
 import { inWeek, overlaps } from '../lib/time.js';
+import * as interestLogic from '../lib/interest.js';
 
 const StoreContext = createContext(null);
 
@@ -215,6 +216,44 @@ export function StoreProvider({ children }) {
     return { ok: true, job: updated };
   }, [commit]);
 
+  // ---------- Teacher: Indicate Interest in an open Job (prototype extension) ----------
+  // Teachers never allocate Jobs to themselves; the Manager approves (UC07).
+  const indicateInterest = useCallback((jobId) => {
+    const deny = requireRole(ROLES.TEACHER);
+    if (deny) return deny;
+    const res = interestLogic.indicateInterest(dataRef.current, sessionRef.current.teacherId, jobId);
+    if (res.ok) commit(res.data);
+    return res;
+  }, [commit]);
+
+  const withdrawInterest = useCallback((interestId) => {
+    const deny = requireRole(ROLES.TEACHER);
+    if (deny) return deny;
+    const res = interestLogic.withdrawInterest(dataRef.current, sessionRef.current.teacherId, interestId);
+    if (res.ok) commit(res.data);
+    return res;
+  }, [commit]);
+
+  // ---------- Manager: approve / decline Teacher interest ----------
+  const approveInterest = useCallback((interestId) => {
+    const deny = requireRole(ROLES.MANAGER);
+    if (deny) return deny;
+    const d = dataRef.current;
+    const it = d.interests.find((i) => i.id === interestId);
+    const name = d.teachers.find((t) => t.id === it?.teacherId)?.name;
+    const res = interestLogic.approveInterest(d, interestId, name);
+    if (res.ok) commit(res.data);
+    return res;
+  }, [commit]);
+
+  const declineInterest = useCallback((interestId) => {
+    const deny = requireRole(ROLES.MANAGER);
+    if (deny) return deny;
+    const res = interestLogic.declineInterest(dataRef.current, interestId);
+    if (res.ok) commit(res.data);
+    return res;
+  }, [commit]);
+
   // ---------- Manager: Teacher Profile (FR-11) ----------
   const updateTeacherProfile = useCallback((teacherId, { instruments, expertise, yearsExperience }) => {
     const deny = requireRole(ROLES.MANAGER);
@@ -266,15 +305,28 @@ export function StoreProvider({ children }) {
     let job;
     let jobs;
     let seq = d.seq;
+    let interests = d.interests;
     if (draft.jobId) {
-      job = { ...d.jobs.find((j) => j.id === draft.jobId), ...fields };
+      const existing = d.jobs.find((j) => j.id === draft.jobId);
+      // An allocated Job cannot be allocated a second time from a stale form.
+      if (existing && isAllocated(existing) && existing.teacherId !== draft.teacherId) {
+        return { ok: false, error: `Job ${draft.jobId} is already allocated. It cannot be allocated twice.` };
+      }
+      job = { ...existing, ...fields };
+      const teacherName = d.teachers.find((t) => t.id === draft.teacherId)?.name ?? 'another Teacher';
+      // Pending Teacher requests for this Job are resolved by the direct allocation.
+      const { PENDING, APPROVED, CLOSED } = interestLogic.INTEREST_STATUS;
+      interests = d.interests.map((i) => {
+        if (i.jobId !== job.id || i.status !== PENDING) return i;
+        return i.teacherId === draft.teacherId ? { ...i, status: APPROVED } : { ...i, status: CLOSED, note: `Allocated to ${teacherName}` };
+      });
       jobs = d.jobs.map((j) => (j.id === draft.jobId ? job : j));
     } else {
       job = { id: `J-${d.seq.job}`, ...fields };
       jobs = [...d.jobs, job];
       seq = { ...seq, job: seq.job + 1 };
     }
-    commit({ ...d, jobs, seq });
+    commit({ ...d, jobs, seq, interests });
     return { ok: true, result, job, elapsedMs };
   }, [commit]);
 
@@ -317,6 +369,17 @@ export function StoreProvider({ children }) {
   }, [commit]);
 
   // ---------- Demo tools ----------
+  /** Presentation helper: sign in as a seeded demo account without typing a password. */
+  const switchAccount = useCallback((username) => {
+    const account = dataRef.current.accounts.find((a) => a.username === username);
+    if (!account) return { ok: false, error: 'Demo account not found.' };
+    lastActivity.current = Date.now();
+    setLoginNotice(null);
+    setSess({ accountId: account.id, username: account.username, name: account.name, role: account.role, teacherId: account.teacherId });
+    window.location.hash = `#${HOME_ROUTE[account.role]}`;
+    return { ok: true, account };
+  }, []);
+
   const resetDemoData = useCallback(() => {
     const fresh = createSeedData();
     commit(fresh);
@@ -344,11 +407,16 @@ export function StoreProvider({ children }) {
       updateAvailability,
       saveJobPreference,
       rejectJob,
+      indicateInterest,
+      withdrawInterest,
+      approveInterest,
+      declineInterest,
       updateTeacherProfile,
       checkAllocation,
       allocateJob,
       createAccount,
       resetDemoData,
+      switchAccount,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [data, resetVersion, session, loginNotice, lockouts],

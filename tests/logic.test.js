@@ -4,11 +4,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createSeedData } from '../src/data/seed.js';
-import { validateAllocation, RULES } from '../src/lib/validation.js';
+import { validateAllocation, RULES, teachingBlocks } from '../src/lib/validation.js';
+import * as interest from '../src/lib/interest.js';
 import { isLateSubmission, validateAvailabilityInput, isWithinHorizon } from '../src/lib/availability.js';
 import { weeklyWorkloadRows, lowestWorkload, monthlyHours, isAllocated } from '../src/lib/workload.js';
 import { addMonths, weekStart, fmtTime } from '../src/lib/time.js';
-import { CURRENT_WEEK_START, HORIZON_END } from '../src/config.js';
+import { CONTINUOUS_LIMIT_MINUTES, CURRENT_WEEK_START, HORIZON_END, MIN_BREAK_MINUTES } from '../src/config.js';
 
 const h = (hh, mm = 0) => hh * 60 + mm;
 const failedFRs = (job, data) => validateAllocation(job, data).failures.map((f) => f.fr);
@@ -102,7 +103,8 @@ test('Workload figures for the demo week', () => {
   const rows = weeklyWorkloadRows(data.teachers, data.jobs, CURRENT_WEEK_START);
   const over = rows.filter((r) => r.overThreshold).map((r) => r.teacher.name);
   assert.deepEqual(over, ['Chloe Ng', 'Farah Rahman']);
-  assert.deepEqual(lowestWorkload(rows).map((r) => r.teacher.name), ['Isaac Koh', 'Gabriel Lim', 'Hui Min Chua']);
+  // Jamie Lim (live-demo Teacher) starts with no Jobs, so ranks first.
+  assert.deepEqual(lowestWorkload(rows).map((r) => r.teacher.name), ['Jamie Lim', 'Isaac Koh', 'Gabriel Lim']);
   assert.ok(monthlyHours(data.jobs, 'T01', '2026-11') > 0);
 });
 
@@ -134,9 +136,116 @@ test('every seeded Unallocated Job can be assigned without changing its details'
   for (const job of pending) {
     const teacher = data.teachers.find((t) => validateAllocation({ ...job, teacherId: t.id }, data).ok);
     assert.ok(teacher, `${job.id} has no eligible Teacher`);
-    // The presentation assigns pending Jobs in sequence, so check the next
-    // one against the updated schedule as well.
-    job.teacherId = teacher.id;
-    job.status = 'ALLOCATED';
   }
+  // The two original pending Jobs (Manager demo) can still be assigned in sequence.
+  const [first, second] = pending;
+  first.teacherId = data.teachers.find((t) => validateAllocation({ ...first, teacherId: t.id }, data).ok).id;
+  first.status = 'ALLOCATED';
+  assert.ok(data.teachers.some((t) => validateAllocation({ ...second, teacherId: t.id }, data).ok));
+});
+
+test('the two Monday 1:30 PM open Jobs clash on purpose (FR-22 demo)', () => {
+  const data = createSeedData();
+  const [a, b] = data.jobs.filter((j) => !isAllocated(j) && j.date === '2026-11-23' && j.start === h(13, 30));
+  assert.ok(validateAllocation({ ...b, teacherId: 'T09' }, data).ok);
+  a.teacherId = 'T09';
+  a.status = 'ALLOCATED';
+  assert.deepEqual(failedFRs({ ...b, teacherId: 'T09' }, data), ['FR-22']);
+});
+
+// ---------- Live demo: unassigned Teacher and Indicate Interest workflow ----------
+const JAMIE = 'T09';
+const ALICE = 'T01';
+const openAt = (data, date, start, instrument) =>
+  interest.openJobs(data).find((j) => j.date === date && j.start === start && j.instrument === instrument);
+
+test('Jamie Lim starts with 0 allocated Jobs but has Availability and eligible open Jobs', () => {
+  const data = createSeedData();
+  assert.equal(data.jobs.filter((j) => j.teacherId === JAMIE).length, 0);
+  assert.ok(data.availability.some((a) => a.teacherId === JAMIE));
+  assert.ok(data.accounts.some((a) => a.username === 'jamie.lim' && a.teacherId === JAMIE));
+  const eligible = interest.openJobs(data).filter((j) => interest.checkEligibility(data, j.id, JAMIE).result.ok);
+  assert.ok(eligible.length >= 3);
+  assert.deepEqual(data.interests, []);
+});
+
+test('Alice Tan demonstrates a valid timetable: no block over the limit, breaks at least the minimum', () => {
+  const data = createSeedData();
+  const dates = [...new Set(data.jobs.filter((j) => j.teacherId === ALICE).map((j) => j.date))];
+  for (const date of dates) {
+    const blocks = teachingBlocks(data.jobs.filter((j) => j.teacherId === ALICE && j.date === date && isAllocated(j)));
+    for (const b of blocks) assert.ok(b.minutes <= CONTINUOUS_LIMIT_MINUTES, `${date} block ${b.minutes} min`);
+    for (let i = 1; i < blocks.length; i++) assert.ok(blocks[i].start - blocks[i - 1].end >= MIN_BREAK_MINUTES);
+  }
+});
+
+test('ineligible open Jobs explain why: not qualified, not available, continuous limit', () => {
+  const data = createSeedData();
+  const fr = (job, t) => interest.checkEligibility(data, job.id, t).result.failures.map((f) => f.fr);
+  assert.deepEqual(fr(openAt(data, '2026-11-24', h(16), 'Voice'), JAMIE), ['FR-26']);
+  assert.deepEqual(fr(openAt(data, '2026-11-24', h(19), 'Piano'), JAMIE), ['FR-19']);
+  const monPiano = openAt(data, '2026-11-23', h(13, 30), 'Piano');
+  assert.deepEqual(fr(monPiano, ALICE), ['FR-25'], 'Alice has no 1 h break around 1:30 PM');
+  const res = interest.indicateInterest(data, ALICE, monPiano.id);
+  assert.equal(res.ok, false, 'ineligible interest is refused');
+  assert.match(res.result.failures[0].message, /exceed the maximum continuous teaching duration/);
+});
+
+test('indicate interest -> Manager approves -> Job allocated once; duplicates and competing requests closed', () => {
+  let data = createSeedData();
+  const job = openAt(data, '2026-11-25', h(9, 30), 'Piano');
+  let r = interest.indicateInterest(data, JAMIE, job.id);
+  assert.ok(r.ok);
+  data = r.data;
+  assert.equal(data.jobs.find((j) => j.id === job.id).status, 'UNALLOCATED', 'interest alone does not allocate');
+  assert.equal(interest.indicateInterest(data, JAMIE, job.id).ok, false, 'no duplicate request');
+  r = interest.indicateInterest(data, ALICE, job.id); // Alice is eligible too
+  assert.ok(r.ok);
+  data = r.data;
+  const [jamieReq, aliceReq] = data.interests;
+  r = interest.approveInterest(data, jamieReq.id, 'Jamie Lim');
+  assert.ok(r.ok);
+  data = r.data;
+  assert.equal(data.jobs.find((j) => j.id === job.id).teacherId, JAMIE);
+  assert.equal(data.interests.find((i) => i.id === aliceReq.id).status, 'CLOSED');
+  assert.equal(interest.approveInterest(data, aliceReq.id).ok, false, 'cannot approve twice');
+  assert.equal(interest.indicateInterest(data, ALICE, job.id).ok, false, 'allocated Job is no longer available');
+  assert.ok(!interest.openJobs(data).some((j) => j.id === job.id));
+});
+
+test('pending requests count toward conflicts, and approval re-checks the rules', () => {
+  let data = createSeedData();
+  const piano = openAt(data, '2026-11-23', h(13, 30), 'Piano');
+  const guitar = openAt(data, '2026-11-23', h(13, 30), 'Guitar');
+  data = interest.indicateInterest(data, JAMIE, piano.id).data;
+  const fr = interest.checkEligibility(data, guitar.id, JAMIE).result.failures.map((f) => f.fr);
+  assert.deepEqual(fr, ['FR-22'], 'same-time Job conflicts with the pending request');
+  // Approval is re-validated: if Jamie's Availability is removed, approval is refused.
+  data = { ...data, availability: data.availability.filter((a) => !(a.teacherId === JAMIE && a.date === '2026-11-23')) };
+  const r = interest.approveInterest(data, data.interests[0].id);
+  assert.equal(r.ok, false);
+  assert.deepEqual(r.result.failures.map((f) => f.fr), ['FR-19']);
+});
+
+test('withdraw and decline', () => {
+  let data = createSeedData();
+  const job = openAt(data, '2026-11-27', h(15), 'Guitar');
+  data = interest.indicateInterest(data, JAMIE, job.id).data;
+  const id = data.interests[0].id;
+  assert.equal(interest.withdrawInterest(data, ALICE, id).ok, false, 'only own requests');
+  const w = interest.withdrawInterest(data, JAMIE, id);
+  assert.equal(w.data.interests[0].status, 'CLOSED');
+  const d = interest.declineInterest(data, id);
+  assert.equal(d.data.interests[0].status, 'DECLINED');
+  assert.ok(interest.indicateInterest(d.data, JAMIE, job.id).ok, 'can request again after a decline');
+});
+
+test('teachingBlocks: limit reached shows the required break; short gaps do not reset', () => {
+  const j = (s, e) => ({ start: s, end: e });
+  const blocks = teachingBlocks([j(h(9), h(11)), j(h(11, 30), h(13)), j(h(14), h(15))]);
+  assert.equal(blocks.length, 2, '30-min gap joins; 1 h gap splits');
+  assert.equal(blocks[0].minutes, 240);
+  assert.ok(blocks[0].atLimit);
+  assert.deepEqual(blocks[0].requiredBreak, { start: h(13), end: h(14) });
+  assert.equal(blocks[1].requiredBreak, null);
 });

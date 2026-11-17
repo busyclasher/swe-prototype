@@ -10,11 +10,13 @@ import { JobStatusBadge, studioLabel } from '../../components/JobList.jsx';
 import { LateBadge } from '../teacher/TeacherAvailability.jsx';
 import { PreferenceSummary, selectableWeeks } from '../teacher/JobPreferences.jsx';
 import { ProfileView } from './TeacherProfiles.jsx';
+import RuleChecklist from '../../components/RuleChecklist.jsx';
 import { WorkloadBadge } from './ManagerDashboard.jsx';
 import { useStore } from '../../state/store.jsx';
 import { CURRENT_WEEK_START, DEMO_TODAY, JOB_MINUTES, MAX_COMPARE } from '../../config.js';
 import { fmtDate, fmtDateLong, fmtDateShort, fmtHours, fmtRange, fmtTime, fmtWeek, inWeek, timeOptions, weekDates } from '../../lib/time.js';
 import { validateAllocation } from '../../lib/validation.js';
+import { pendingInterests } from '../../lib/interest.js';
 import { JOB_STATUS, byDateTime, exceedsThreshold, isAllocated, teacherJobsInWeek, weeklyHours } from '../../lib/workload.js';
 
 const TIMES = timeOptions(6 * 60, 22 * 60, 15);
@@ -109,26 +111,8 @@ function CompareCard({ teacher, week, locationDate, data, onRemove, onUse }) {
   );
 }
 
-function RuleChecklist({ checks }) {
-  return (
-    <ol className="rule-list">
-      {checks.map((c) => (
-        <li key={c.id} className={`rule ${c.passed ? 'rule-pass' : 'rule-fail'}`}>
-          <Icon name={c.passed ? 'checkCircle' : 'xCircle'} size={18} />
-          <div>
-            <p className="rule-title">
-              <span className="rule-fr tabular">{c.fr}</span> {c.label} — <strong>{c.passed ? 'Passed' : 'Failed'}</strong>
-            </p>
-            <p className="rule-msg">{c.message}</p>
-          </div>
-        </li>
-      ))}
-    </ol>
-  );
-}
-
 export default function JobAllocation() {
-  const { data, allocateJob } = useStore();
+  const { data, allocateJob, approveInterest, declineInterest } = useStore();
   const toast = useToast();
   const weeks = selectableWeeks();
   const [week, setWeek] = useState(CURRENT_WEEK_START);
@@ -157,6 +141,25 @@ export default function JobAllocation() {
   }, [week]);
 
   const unallocated = data.jobs.filter((j) => j.status === JOB_STATUS.UNALLOCATED && inWeek(j.date, week)).sort(byDateTime);
+
+  // Teacher "Indicate Interest" requests: checked live against all eight rules.
+  const requests = pendingInterests(data)
+    .map((i) => ({ interest: i, job: data.jobs.find((j) => j.id === i.jobId) }))
+    .filter((r) => r.job)
+    .sort((a, b) => byDateTime(a.job, b.job));
+  const interestCount = (jobId) => requests.filter((r) => r.job.id === jobId).length;
+
+  const approve = (interest) => {
+    const res = approveInterest(interest.id);
+    if (res.ok) {
+      setLastJobId(res.job.id);
+      toast('success', `Job ${res.job.id} allocated to ${teacherName(res.job.teacherId)}. Other requests for this Job were closed.`);
+    } else toast('danger', res.error);
+  };
+  const decline = (interest) => {
+    const res = declineInterest(interest.id);
+    toast(res.ok ? 'info' : 'danger', res.ok ? `Request from ${teacherName(interest.teacherId)} for ${interest.jobId} declined.` : res.error);
+  };
 
   const toggleCompare = (id) => {
     if (compareIds.includes(id)) {
@@ -271,10 +274,46 @@ export default function JobAllocation() {
         {unallocated.length ? <div className="pending-jobs">
           {unallocated.map((j) => <button type="button" key={j.id} className={`pending-job ${form.jobId === j.id ? 'selected' : ''}`} aria-pressed={form.jobId === j.id} onClick={() => loadJob(j.id)}>
             <span className="pending-job-icon"><Icon name="jobs" /></span>
-            <span className="pending-job-info"><strong>{j.instrument} · {j.id}</strong><span className="muted small">{fmtDateShort(j.date)} · {fmtRange(j.start, j.end)} · {studioLabel(data.studios, j.studioId)}</span></span>
+            <span className="pending-job-info"><strong>{j.instrument} · {j.id} {interestCount(j.id) > 0 && <Badge tone="info" icon="hand">{interestCount(j.id)} interested</Badge>}</strong><span className="muted small">{fmtDateShort(j.date)} · {fmtRange(j.start, j.end)} · {studioLabel(data.studios, j.studioId)}</span></span>
             <span className="pending-job-action">{form.jobId === j.id ? 'Selected' : 'Assign Teacher'} <Icon name="arrowRight" size={16} /></span>
           </button>)}
         </div> : <EmptyState icon="checkCircle" title="All Jobs allocated for this week">Create a new Job above or select another week.</EmptyState>}
+      </Card>
+
+      <Card
+        className="mt-4"
+        title="Teacher interest requests"
+        subtitle={`${requests.length} pending request${requests.length === 1 ? '' : 's'} from Teachers. Approving allocates the Job after all eight rules pass.`}
+      >
+        {requests.length ? (
+          <ul className="request-list">
+            {requests.map(({ interest, job }) => {
+              const check = validateAllocation({ ...job, teacherId: interest.teacherId }, data);
+              return (
+                <li key={interest.id} className="request-item">
+                  <span className="request-info">
+                    <strong>{teacherName(interest.teacherId)} → {job.instrument} · {job.id}</strong>
+                    <span className="muted">{fmtDateShort(job.date)} · <span className="tabular">{fmtRange(job.start, job.end)}</span> · {studioLabel(data.studios, job.studioId)}</span>
+                  </span>
+                  <span className="request-actions">
+                    {check.ok ? <Badge tone="success">All 8 rules pass</Badge> : <Badge tone="danger">{check.failures.length} rule{check.failures.length === 1 ? '' : 's'} broken</Badge>}
+                    <Button size="sm" icon="check" disabled={!check.ok} onClick={() => approve(interest)}>Approve and allocate</Button>
+                    <Button size="sm" variant="secondary" icon="x" onClick={() => decline(interest)}>Decline</Button>
+                  </span>
+                  {!check.ok && (
+                    <Alert tone="danger" className="request-fail">
+                      <ul className="fail-list">
+                        {check.failures.map((f) => <li key={f.id}><strong>{f.fr} · {f.label}:</strong> {f.message}</li>)}
+                      </ul>
+                    </Alert>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <EmptyState icon="hand" title="No pending requests">When a Teacher indicates interest in an Unallocated Job, it appears here for approval.</EmptyState>
+        )}
       </Card>
 
       {/* Step 2: allocate */}

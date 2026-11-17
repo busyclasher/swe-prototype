@@ -97,6 +97,16 @@ const TEACHERS = [
     ],
     decAvailUntil: HORIZON_END, decSubmittedOn: '2026-11-21', // submitted after the 19th -> Late
   },
+  {
+    // Live-demo Teacher: Availability on weekdays but ZERO allocated Jobs at the
+    // start of the presentation. No teaching blocks, so job generation skips
+    // this Teacher and the random sequence for everyone else is unchanged.
+    id: 'T09', name: 'Jamie Lim', username: 'jamie.lim', email: 'jamie.lim@sonara.example',
+    profile: { instruments: ['Piano', 'Guitar'], expertise: ['Beginner foundations', 'Pop accompaniment'], yearsExperience: 1 },
+    studios: [], fill: 0,
+    pattern: [{ days: [0, 1, 2, 3, 4], blocks: [], avail: [h(9), h(18)] }],
+    decAvailUntil: HORIZON_END, decSubmittedOn: '2026-11-14',
+  },
 ];
 
 const OTHER_ACCOUNTS = [
@@ -196,9 +206,16 @@ export function createSeedData() {
   }
 
   // Jobs that are already Unallocated in the current week (e.g. rejected earlier).
+  // They are also the "Available Jobs" Teachers can indicate interest in.
+  // Comments describe what each one demonstrates for Jamie Lim (T09) / Alice Tan (T01).
+  const cw0 = weekStart(DEMO_TODAY);
   const unallocated = [
-    { date: addDays(weekStart(DEMO_TODAY), 2), start: h(9, 30), instrument: 'Piano', studioId: 'S4' },
-    { date: addDays(weekStart(DEMO_TODAY), 4), start: h(15), instrument: 'Guitar', studioId: 'S4' },
+    { date: addDays(cw0, 2), start: h(9, 30), instrument: 'Piano', studioId: 'S4' }, // eligible for Jamie
+    { date: addDays(cw0, 4), start: h(15), instrument: 'Guitar', studioId: 'S4' }, // eligible for Jamie
+    { date: cw0, start: h(13, 30), instrument: 'Piano', studioId: 'S5' }, // Jamie eligible; Alice breaks FR-25 (no 1 h break)
+    { date: cw0, start: h(13, 30), instrument: 'Guitar', studioId: 'S4' }, // same time: clashes (FR-22) once Jamie has the Piano Job
+    { date: addDays(cw0, 1), start: h(16), instrument: 'Voice', studioId: 'S3' }, // Jamie not qualified (FR-26)
+    { date: addDays(cw0, 1), start: h(19), instrument: 'Piano', studioId: 'S3' }, // Jamie not available after 6 PM (FR-19)
   ];
   for (const u of unallocated) {
     jobs.push({ id: `J-${jobSeq++}`, ...u, end: u.start + JOB_MINUTES, teacherId: null, status: JOB_STATUS.UNALLOCATED });
@@ -224,6 +241,7 @@ export function createSeedData() {
     availability,
     jobs,
     preferences,
-    seq: { job: jobSeq, avail: availSeq, pref: preferences.length + 1, account: 1, teacher: TEACHERS.length + 1 },
+    interests: [], // Teacher "Indicate Interest" requests awaiting Manager approval
+    seq: { job: jobSeq, avail: availSeq, pref: preferences.length + 1, account: 1, teacher: TEACHERS.length + 1, interest: 1 },
   };
 }

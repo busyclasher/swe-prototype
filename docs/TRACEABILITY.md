@@ -5,7 +5,7 @@
 | FR | Screen / component | Role | Interaction | Expected result | Verified |
 |---|---|---|---|---|---|
 | FR-01 | Manager Dashboard › "Weekly Workload by Teacher" table | Manager | Sign in | Every Teacher with Jobs count and allocated hours for the current week | E: UC05 |
-| FR-02 | Manager Dashboard › "Lowest allocated Workload" | Manager | Sign in | Three lowest Teachers ranked (Isaac 2.0 h, Gabriel 2.5 h, Hui Min 4.0 h) | U: Workload figures; E: UC05 |
+| FR-02 | Manager Dashboard › "Lowest allocated Workload" | Manager | Sign in | Three lowest Teachers ranked (Jamie 0.0 h, Isaac 2.0 h, Gabriel 2.5 h) | U: Workload figures; E: UC05 |
 | FR-03 | Manager Dashboard › "Above 40 hours" card + table status + metric | Manager | Sign in | Chloe Ng and Farah Rahman flagged with the text "Above 40 hours", an icon, a striped bar and a red edge (not colour alone) | U; E: UC05 |
 | FR-04 | Teacher Availability (Manager) | Manager | Choose Teacher (or All Teachers) and a date from today to 23 Dec | Availability ranges with Late/On time labels; read-only | E: FR-04 |
 | FR-05 | Teacher Dashboard › "This week's allocated Jobs" | Teacher | Sign in | Own Jobs Mon–Sun grouped by day: time, Instrument, Studio, status | E: UC03 |
@@ -57,3 +57,16 @@
 | Wrong role → "Access denied" page | `ROUTES` role list (E: Teacher → /manager/allocation, Manager → /admin/accounts) |
 | Actions re-check role | every action in `store.jsx` (`requireRole`) |
 | Teacher sees only own data | Teacher pages read `session.teacherId` only; no Teacher id in URLs; `rejectJob`/`updateAvailability` refuse other Teachers' records |
+
+## Prototype extension: Indicate Interest (pending requirements approval)
+
+Not part of FR-01 to FR-31. Teachers do **not** allocate Jobs to themselves; allocation stays with the Manager (UC07, FR-12).
+
+| Behaviour | Where | Role | Evidence |
+|---|---|---|---|
+| Browse Unallocated upcoming Jobs with eligibility | Teacher › Available Jobs | Teacher | U: `openJobs`, `checkEligibility` |
+| Indicate Interest (refused if any of FR-19 to FR-26 fails; pending requests count as conflicts) | Available Jobs › Indicate Interest | Teacher | U: ineligible / pending conflict tests |
+| Withdraw request | Available Jobs › My requests | Teacher | U: withdraw and decline |
+| Approve (re-checks all eight rules, allocates, closes competing requests) / Decline | Job Allocation › Teacher interest requests | Manager | U: approve once, re-validation |
+| FR-25 teaching blocks and required break windows | Teacher Dashboard and My Jobs (per day) | Teacher | U: `teachingBlocks` |
+| Unassigned demo Teacher Jamie Lim (0 Jobs) and Demo tools › Switch account | Seed data, Demo tools | — | U: Jamie starts with 0 Jobs |

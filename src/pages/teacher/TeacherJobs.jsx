@@ -3,7 +3,7 @@
 // with Manager -> Confirm or Cancel -> Job becomes Unallocated.
 
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Button, Card, DataList, EmptyState, Modal, PageHeader, useToast } from '../../components/ui.jsx';
+import { Alert, Button, ButtonLink, Card, DataList, EmptyState, Modal, PageHeader, useToast } from '../../components/ui.jsx';
 import JobList, { JobStatusBadge, studioLabel } from '../../components/JobList.jsx';
 import { useStore } from '../../state/store.jsx';
 import { DEMO_NOW_MINUTES, DEMO_TODAY } from '../../config.js';
@@ -56,13 +56,23 @@ export default function TeacherJobs({ query }) {
 
   return (
     <>
-      <PageHeader title="My Jobs" description="Select one of your upcoming allocated Jobs to see its details or reject it." />
+      <PageHeader
+        title="My Jobs"
+        description="Select one of your upcoming allocated Jobs to see its details or reject it. Each day shows your continuous teaching and required breaks."
+        actions={<ButtonLink to="/teacher/available" icon="hand">Available Jobs</ButtonLink>}
+      />
       <div className="split">
         <Card title="Upcoming allocated Jobs" subtitle={`${myJobs.length} Job${myJobs.length === 1 ? '' : 's'} from ${fmtDateLong(DEMO_TODAY)}`}>
           {myJobs.length ? (
-            <JobList jobs={myJobs} studios={data.studios} selectedId={selectedId} onSelect={select} />
+            <JobList jobs={myJobs} studios={data.studios} selectedId={selectedId} onSelect={select} showBreaks />
           ) : (
-            <EmptyState icon="jobs" title="No upcoming Jobs">You have no allocated Jobs from today onwards.</EmptyState>
+            <EmptyState
+              icon="jobs"
+              title="No jobs allocated yet"
+              action={<ButtonLink to="/teacher/available" variant="primary" icon="hand">View available Jobs</ButtonLink>}
+            >
+              You have no allocated Jobs from today onwards. Browse available Jobs and indicate interest; approved Jobs appear here.
+            </EmptyState>
           )}
         </Card>
 

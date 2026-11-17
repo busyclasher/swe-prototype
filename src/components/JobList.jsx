@@ -1,7 +1,47 @@
 import Icon from './Icon.jsx';
 import { Badge } from './ui.jsx';
-import { fmtDateLong, fmtRange } from '../lib/time.js';
+import { fmtDateLong, fmtDuration, fmtRange } from '../lib/time.js';
 import { JOB_STATUS } from '../lib/workload.js';
+import { teachingBlocks } from '../lib/validation.js';
+import { CONTINUOUS_LIMIT_MINUTES, MIN_BREAK_MINUTES } from '../config.js';
+
+/**
+ * FR-25 summary for one day: continuous teaching blocks, the breaks between
+ * them, and the mandatory break window after any block at the limit.
+ */
+export function DayBreaks({ jobs }) {
+  const blocks = teachingBlocks(jobs);
+  if (!blocks.length) return null;
+  return (
+    <ul className="day-breaks" aria-label="Continuous teaching and breaks">
+      {blocks.map((b, i) => {
+        const next = blocks[i + 1];
+        return (
+          <li key={b.start} className="day-breaks-item">
+            <span className={`block-chip ${b.atLimit ? 'block-chip-limit' : ''}`}>
+              <Icon name="clock" size={14} /> Teaching <span className="tabular">{fmtRange(b.start, b.end)}</span> ·{' '}
+              <strong className="tabular">{fmtDuration(b.minutes)}</strong>
+              {b.atLimit ? ` (limit ${fmtDuration(CONTINUOUS_LIMIT_MINUTES)} reached)` : ` of ${fmtDuration(CONTINUOUS_LIMIT_MINUTES)} max`}
+            </span>
+            {b.requiredBreak && (
+              <span className="block-chip block-chip-break">
+                <Icon name="coffee" size={14} /> Required break <span className="tabular">{fmtRange(b.requiredBreak.start, b.requiredBreak.end)}</span> — no Jobs
+              </span>
+            )}
+            {next && !b.requiredBreak && (
+              <span className="block-chip block-chip-gap">
+                <Icon name="coffee" size={14} /> Break <span className="tabular">{fmtRange(b.end, next.start)}</span> ({fmtDuration(next.start - b.end)})
+              </span>
+            )}
+          </li>
+        );
+      })}
+      <li className="day-breaks-note muted small">
+        Rule FR-25: at most {fmtDuration(CONTINUOUS_LIMIT_MINUTES)} continuous teaching; gaps shorter than {fmtDuration(MIN_BREAK_MINUTES)} do not count as a break.
+      </li>
+    </ul>
+  );
+}
 
 export function JobStatusBadge({ status }) {
   return status === JOB_STATUS.ALLOCATED ? (
@@ -17,7 +57,8 @@ export function studioLabel(studios, id) {
 }
 
 /** Jobs grouped by date. `renderAction(job)` adds a per-Job control. */
-export default function JobList({ jobs, studios, renderAction, selectedId, onSelect, compact }) {
+/** `showBreaks` adds the FR-25 teaching-block and break summary under each day (pass all of the Teacher's Jobs for that day). */
+export default function JobList({ jobs, studios, renderAction, selectedId, onSelect, compact, showBreaks, hideStatus }) {
   const byDate = jobs.reduce((acc, j) => {
     (acc[j.date] ||= []).push(j);
     return acc;
@@ -37,7 +78,7 @@ export default function JobList({ jobs, studios, renderAction, selectedId, onSel
                   <span className="job-inst"><Icon name="music" size={16} /> {j.instrument}</span>
                   <span className="job-studio"><Icon name="pin" size={16} /> {studioLabel(studios, j.studioId)}</span>
                   {!compact && <span className="job-id muted tabular">{j.id}</span>}
-                  <span className="job-status"><JobStatusBadge status={j.status} /></span>
+                  {!hideStatus && <span className="job-status"><JobStatusBadge status={j.status} /></span>}
                 </>
               );
               return (
@@ -54,6 +95,7 @@ export default function JobList({ jobs, studios, renderAction, selectedId, onSel
               );
             })}
           </ul>
+          {showBreaks && <DayBreaks jobs={list} />}
         </section>
       ))}
     </div>

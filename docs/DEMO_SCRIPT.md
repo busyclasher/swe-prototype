@@ -21,9 +21,9 @@ Every value below comes from the default dataset (demo date Mon 23 Nov 2026).
 ## 3. Manager workflow (2 min) – `grace.ho / manager123`
 1. **UC05:** On the Dashboard, show:
    - the Workload table (FR-01)
-   - Lowest three: Isaac 2.0 h, Gabriel 2.5 h, Hui Min 4.0 h (FR-02)
+   - Lowest three: Jamie 0.0 h, Isaac 2.0 h, Gabriel 2.5 h (FR-02)
    - **Above 40 hours**: Farah 45.0 h, Chloe 42.0 h, shown with a text label, icon and striped bar, not colour alone (FR-03)
-   - *Unallocated Jobs this week* is now 3, including Alice's rejected Job (FR-30)
+   - *Unallocated Jobs this week* is now 7, including Alice's rejected Job (FR-30)
 2. **FR-04:** Click Isaac's **Availability** › set the date to 2 Dec. December entries show **Late**.
 3. **UC06:** Go to Teacher Profiles › Gabriel Lim › Edit Profile › years 4, add "Orchestral audition coaching" › Save. *Alternative:* clear the years field and Save to show the validation error.
 
@@ -47,6 +47,17 @@ Every value below comes from the default dataset (demo date Mon 23 Nov 2026).
    *Tip:* the comparison card's "Use in allocation form" fills the Teacher field.
 4. **Success:** Isaac Koh · Wed 25 Nov · 6:00 PM · Guitar · Studio 3. The allocation is confirmed, Isaac's chip goes from 2.0 h to 2.5 h, and the Job list shows "Just allocated". Submit the same again and FR-22 now fails.
 5. *Optional:* In **Pending allocation**, choose the Friday Guitar Job (J-2354, 27 Nov, 3:00 PM, Studio 4). Select **Isaac Koh**, whose option shows **All 8 rules pass**, and allocate it. Alice's rejected Monday Voice Job is also visible; loading it demonstrates that a qualified Teacher may still fail Availability (FR-19). Log out.
+
+## 4b. Unassigned Teacher and continuous-teaching rule (2 min)
+Use **Demo tools → Switch account** to change user without retyping passwords.
+1. **Valid timetable (Alice):** On Alice's Dashboard / My Jobs, each day shows its teaching blocks and breaks (e.g. Mon: 10:00 AM – 1:00 PM · 3 h, break 1:00 – 2:30 PM). No block exceeds 4 h and every break is at least 1 h (FR-25).
+2. **Invalid adjacent Job (Alice):** Available Jobs › **Mon 23 Nov 1:30 PM Piano, Studio 5 (J-2355)**. Shown as *Not eligible*: "This Job would exceed the maximum continuous teaching duration… 6 h (10:00 AM – 4:00 PM)". Indicate Interest is disabled.
+3. **Empty Teacher:** Switch to **Jamie Lim** (`jamie.lim / teacher123`). Dashboard and My Jobs show **No jobs allocated yet**.
+4. Available Jobs › select **J-2355** (now *Eligible* for Jamie) › **Indicate Interest** › **Confirm interest**. The request shows *Awaiting Manager approval*; the Job is not allocated yet.
+   - *Validation examples:* J-2357 Voice (FR-26 not qualified), J-2358 Tue 7:00 PM (FR-19 not available), J-2356 Mon 1:30 PM Guitar (FR-22, clashes with the pending J-2355 request).
+5. Switch to **Grace Ho**. The Dashboard notes 1 request; Job Allocation › **Teacher interest requests** › **Approve and allocate**. All eight rules are re-checked; competing requests for the Job are closed, so it can never be allocated twice.
+6. Switch back to Jamie. The request shows *Approved*, and the Job is under My Jobs and Workload.
+7. **Reset demo data** to repeat the scenario.
 
 ## 5. IT Administrator and conclusion (1–2 min) – `it.admin / admin123`
 1. Press *Create account* empty to show the field errors.

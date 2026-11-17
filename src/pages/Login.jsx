@@ -6,7 +6,7 @@ import { useStore } from '../state/store.jsx';
 import { ROLE_LABELS } from '../lib/roles.js';
 import { LOCKOUT_ATTEMPTS } from '../config.js';
 
-const FEATURED = ['alice.tan', 'isaac.koh', 'grace.ho', 'it.admin'];
+const FEATURED = ['alice.tan', 'jamie.lim', 'isaac.koh', 'grace.ho', 'it.admin'];
 
 function formatCountdown(ms) {
   const s = Math.max(0, Math.ceil(ms / 1000));

@@ -7,6 +7,7 @@ import { HOME_ROUTE, ROLES, ROLE_LABELS } from './lib/roles.js';
 import Login from './pages/Login.jsx';
 import TeacherDashboard from './pages/teacher/TeacherDashboard.jsx';
 import TeacherJobs from './pages/teacher/TeacherJobs.jsx';
+import AvailableJobs from './pages/teacher/AvailableJobs.jsx';
 import TeacherAvailability from './pages/teacher/TeacherAvailability.jsx';
 import JobPreferences from './pages/teacher/JobPreferences.jsx';
 import ManagerDashboard from './pages/manager/ManagerDashboard.jsx';
@@ -21,6 +22,7 @@ const { TEACHER, MANAGER, IT_ADMIN } = ROLES;
 export const ROUTES = {
   '/teacher': { title: 'Teacher Dashboard', roles: [TEACHER], Component: TeacherDashboard },
   '/teacher/jobs': { title: 'My Jobs', roles: [TEACHER], Component: TeacherJobs },
+  '/teacher/available': { title: 'Available Jobs', roles: [TEACHER], Component: AvailableJobs },
   '/teacher/availability': { title: 'Availability', roles: [TEACHER], Component: TeacherAvailability },
   '/teacher/preferences': { title: 'Job Preferences', roles: [TEACHER], Component: JobPreferences },
   '/manager': { title: 'Manager Dashboard', roles: [MANAGER], Component: ManagerDashboard },
