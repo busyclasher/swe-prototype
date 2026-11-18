@@ -48,7 +48,7 @@ export default function AccountManagement() {
                 ]}
               />
               <p className="small mt-2">
-                This account can sign in to the demo now (use Log out, then sign in with the username and the temporary password you set).
+                This account can sign in to the demo now (use Log out, then sign in with the username and password you set).
                 {created.role === 'TEACHER' && ' A Teacher Profile was created with no Instruments; a Manager can complete it on the Teacher Profiles page.'}
               </p>
             </Alert>
@@ -84,7 +84,7 @@ export default function AccountManagement() {
               {errors.role && <p id="role-err" className="field-error">{errors.role}</p>}
             </fieldset>
             <div className="form-row">
-              <Field label="Temporary password" error={errors.password} hint="At least 8 characters" required>
+              <Field label="Password" error={errors.password} hint="At least 8 characters" required>
                 {(p) => <input {...p} type="password" className="input" autoComplete="new-password" value={form.password} onChange={set('password')} />}
               </Field>
               <Field label="Confirm password" error={errors.confirmPassword} required>

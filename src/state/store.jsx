@@ -347,7 +347,7 @@ export function StoreProvider({ children }) {
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = 'Enter a valid email address, e.g. name@sonara.example.';
     else if (d.accounts.some((a) => a.email.toLowerCase() === email.toLowerCase())) errors.email = 'This email address is already linked to an account.';
     if (!CREATABLE_ROLES.includes(input.role)) errors.role = 'Select Teacher or Manager.';
-    if (!input.password) errors.password = 'Enter a temporary password.';
+    if (!input.password) errors.password = 'Enter a password.';
     else if (input.password.length < 8) errors.password = 'Use at least 8 characters.';
     if (input.password && input.confirmPassword !== input.password) errors.confirmPassword = 'Passwords do not match.';
     if (Object.keys(errors).length) return { ok: false, errors };

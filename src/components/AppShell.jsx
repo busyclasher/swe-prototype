@@ -5,6 +5,7 @@ import { useStore } from '../state/store.jsx';
 import { ROLE_LABELS } from '../lib/roles.js';
 import { DEMO_TODAY } from '../config.js';
 import { fmtDate } from '../lib/time.js';
+import sonoraLogo from '../../image/sonora-logo.png';
 
 export const NAV = {
   TEACHER: [
@@ -25,9 +26,8 @@ export const NAV = {
 
 function Brand() {
   return (
-    <div className="brand">
-      <span className="brand-mark"><Icon name="music" size={18} /></span>
-      <span className="brand-name">Sonara <span className="brand-version">2.0</span></span>
+    <div className="brand nav-brand">
+      <img className="nav-logo" src={sonoraLogo} alt="SONORA" width="904" height="449" />
     </div>
   );
 }
