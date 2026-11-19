@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import Icon from '../components/Icon.jsx';
 import { Alert, Badge, Button, Field } from '../components/ui.jsx';
 import { DemoTools } from '../components/AppShell.jsx';
-import { useStore } from '../state/store.jsx';
+import { loginKey, useStore } from '../state/store.jsx';
 import { ROLE_LABELS } from '../lib/roles.js';
 import { LOCKOUT_ATTEMPTS } from '../config.js';
 
@@ -21,7 +21,7 @@ export default function Login() {
   const [formError, setFormError] = useState(null);
   const [now, setNow] = useState(Date.now());
 
-  const lock = lockouts[username.trim().toLowerCase()];
+  const lock = lockouts[loginKey(data.accounts, username)];
   const lockedFor = lock?.lockedUntil ? lock.lockedUntil - now : 0;
 
   useEffect(() => {
@@ -33,7 +33,7 @@ export default function Login() {
   const submit = (e) => {
     e.preventDefault();
     const fieldErrors = {};
-    if (!username.trim()) fieldErrors.username = 'Enter your username.';
+    if (!username.trim()) fieldErrors.username = 'Enter your username or email.';
     if (!password) fieldErrors.password = 'Enter your password.';
     setErrors(fieldErrors);
     setFormError(null);
@@ -94,7 +94,7 @@ export default function Login() {
           {formError && lockedFor <= 0 && <Alert tone="danger" className="mt-3">{formError}</Alert>}
 
           <form onSubmit={submit} noValidate className="stack mt-4">
-            <Field label="Username" error={errors.username} required>
+            <Field label="Username or email" error={errors.username} required>
               {(p) => (
                 <input {...p} className="input" autoComplete="username" value={username} onChange={(e) => setUsername(e.target.value)} />
               )}

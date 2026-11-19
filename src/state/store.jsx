@@ -21,6 +21,18 @@ import * as interestLogic from '../lib/interest.js';
 
 const StoreContext = createContext(null);
 
+/** Find an account by username or email (case-insensitive). */
+export function findAccountByLogin(accounts, input) {
+  const v = input.trim().toLowerCase();
+  if (!v) return undefined;
+  return accounts.find((a) => a.username === v || a.email.toLowerCase() === v);
+}
+
+/** Key used for lockouts: the account's username if found, else the normalised input. */
+export function loginKey(accounts, input) {
+  return findAccountByLogin(accounts, input)?.username ?? input.trim().toLowerCase();
+}
+
 export function useStore() {
   return useContext(StoreContext);
 }
@@ -60,15 +72,16 @@ export function StoreProvider({ children }) {
 
   // ---------- Authentication (simulated) ----------
   const login = useCallback((usernameRaw, password) => {
-    const username = usernameRaw.trim().toLowerCase();
     const now = Date.now();
-    const account = dataRef.current.accounts.find((a) => a.username === username);
+    const account = findAccountByLogin(dataRef.current.accounts, usernameRaw);
+    // Lockouts are keyed by the account's username so that username and email share one counter.
+    const username = loginKey(dataRef.current.accounts, usernameRaw);
     const state = lockRef.current[username];
     if (state?.lockedUntil && state.lockedUntil > now) {
       return { ok: false, locked: true, lockedUntil: state.lockedUntil };
     }
     if (!account || account.password !== password) {
-      if (!account) return { ok: false, error: 'Incorrect username or password.' };
+      if (!account) return { ok: false, error: 'Incorrect username/email or password.' };
       const failures = (state?.lockedUntil && state.lockedUntil <= now ? 0 : state?.failures ?? 0) + 1;
       if (failures >= LOCKOUT_ATTEMPTS) {
         const lockedUntil = now + LOCKOUT_MS;
@@ -76,13 +89,13 @@ export function StoreProvider({ children }) {
         return { ok: false, locked: true, lockedUntil, justLocked: true };
       }
       setLocks({ ...lockRef.current, [username]: { failures, lockedUntil: null } });
-      return { ok: false, error: 'Incorrect username or password.', remaining: LOCKOUT_ATTEMPTS - failures };
+      return { ok: false, error: 'Incorrect username/email or password.', remaining: LOCKOUT_ATTEMPTS - failures };
     }
     const { [username]: _cleared, ...rest } = lockRef.current;
     setLocks(rest);
     lastActivity.current = Date.now();
     setLoginNotice(null);
-    setSess({ accountId: account.id, username, name: account.name, role: account.role, teacherId: account.teacherId });
+    setSess({ accountId: account.id, username: account.username, name: account.name, role: account.role, teacherId: account.teacherId });
     return { ok: true, role: account.role };
   }, []);
 
