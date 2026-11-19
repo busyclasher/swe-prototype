@@ -16,15 +16,15 @@ const failedFRs = (job, data) => validateAllocation(job, data).failures.map((f) 
 
 // The demonstration scenarios from docs/DEMO_SCRIPT.md. Each must fail ONLY its own rule.
 export const DEMO_SCENARIOS = {
-  success: { teacherId: 'T08', date: '2026-11-25', start: h(18), instrument: 'Guitar', studioId: 'S3' },
-  'FR-19': { teacherId: 'T08', date: '2026-11-28', start: h(10), instrument: 'Guitar', studioId: 'S4' },
-  'FR-20': { teacherId: 'T04', date: '2026-11-24', start: h(8, 30), instrument: 'Guitar', studioId: 'S2' },
-  'FR-21': { teacherId: 'T08', date: '2026-11-26', start: h(18), instrument: 'Guitar', studioId: 'S3' },
-  'FR-22': { teacherId: 'T08', date: '2026-11-24', start: h(19), instrument: 'Guitar', studioId: 'S1' },
-  'FR-23': { teacherId: 'T08', date: '2026-11-25', start: h(18), instrument: 'Guitar', studioId: 'S2' },
+  success: { teacherId: 'T08', date: '2026-11-25', start: h(18), instrument: 'Trumpet', studioId: 'S3' },
+  'FR-19': { teacherId: 'T08', date: '2026-11-28', start: h(10), instrument: 'Trumpet', studioId: 'S4' },
+  'FR-20': { teacherId: 'T04', date: '2026-11-24', start: h(8, 30), instrument: 'Trumpet', studioId: 'S2' },
+  'FR-21': { teacherId: 'T08', date: '2026-11-26', start: h(18), instrument: 'Trumpet', studioId: 'S3' },
+  'FR-22': { teacherId: 'T08', date: '2026-11-24', start: h(19), instrument: 'Trumpet', studioId: 'S1' },
+  'FR-23': { teacherId: 'T08', date: '2026-11-25', start: h(18), instrument: 'Trumpet', studioId: 'S2' },
   'FR-24': { teacherId: 'T04', date: '2026-11-24', start: h(15), instrument: 'Drums', studioId: 'S3' },
   'FR-25': { teacherId: 'T03', date: '2026-11-23', start: h(13), instrument: 'Violin', studioId: 'S4' },
-  'FR-26': { teacherId: 'T08', date: '2026-11-25', start: h(18), instrument: 'Violin', studioId: 'S3' },
+  'FR-26': { teacherId: 'T08', date: '2026-11-25', start: h(18), instrument: 'Piano', studioId: 'S3' },
 };
 
 test('date helpers', () => {
@@ -67,7 +67,7 @@ test('opening-hour boundaries', () => {
   // Isolate the opening-hours rule: give the Teacher full-day Availability on clean dates.
   data.availability.push({ id: 'X1', teacherId: 'T08', date: '2026-12-01', start: 0, end: h(24) });
   data.availability.push({ id: 'X2', teacherId: 'T08', date: '2026-12-05', start: 0, end: h(24) });
-  const job = (date, start) => ({ teacherId: 'T08', date, start, instrument: 'Guitar', studioId: 'S1' });
+  const job = (date, start) => ({ teacherId: 'T08', date, start, instrument: 'Trumpet', studioId: 'S1' });
   assert.ok(!failedFRs(job('2026-12-01', h(9)), data).includes('FR-20'), 'weekday 9:00 opens');
   assert.ok(failedFRs(job('2026-12-01', h(8, 30)), data).includes('FR-20'), 'weekday 8:30 closed');
   assert.ok(!failedFRs(job('2026-12-01', h(20, 30)), data).includes('FR-20'), 'last weekday Job 8:30 PM');
@@ -80,11 +80,11 @@ test('continuous-teaching limit: 4 h allowed, 4.5 h rejected, 1 h break resets',
   const data = { ...createSeedData(), jobs: [] };
   data.availability.push({ id: 'X', teacherId: 'T08', date: '2026-12-01', start: h(9), end: h(21) });
   for (let s = h(9); s < h(12, 30); s += 30) {
-    data.jobs.push({ id: `Z${s}`, teacherId: 'T08', date: '2026-12-01', start: s, end: s + 30, instrument: 'Guitar', studioId: 'S1', status: 'ALLOCATED' });
+    data.jobs.push({ id: `Z${s}`, teacherId: 'T08', date: '2026-12-01', start: s, end: s + 30, instrument: 'Trumpet', studioId: 'S1', status: 'ALLOCATED' });
   }
-  const job = (start) => ({ teacherId: 'T08', date: '2026-12-01', start, instrument: 'Guitar', studioId: 'S2' });
+  const job = (start) => ({ teacherId: 'T08', date: '2026-12-01', start, instrument: 'Trumpet', studioId: 'S2' });
   assert.deepEqual(failedFRs(job(h(12, 30)), data), [], '9:00-13:00 is exactly 4 h');
-  data.jobs.push({ id: 'Z-last', teacherId: 'T08', date: '2026-12-01', start: h(12, 30), end: h(13), instrument: 'Guitar', studioId: 'S1', status: 'ALLOCATED' });
+  data.jobs.push({ id: 'Z-last', teacherId: 'T08', date: '2026-12-01', start: h(12, 30), end: h(13), instrument: 'Trumpet', studioId: 'S1', status: 'ALLOCATED' });
   assert.deepEqual(failedFRs(job(h(13)), data), ['FR-25'], 'no break -> 4.5 h');
   assert.deepEqual(failedFRs(job(h(13, 30)), data), ['FR-25'], '30-min gap is not a break');
   assert.deepEqual(failedFRs(job(h(14)), data), [], '1 h break starts a new block');
@@ -182,7 +182,7 @@ test('Alice Tan demonstrates a valid timetable: no block over the limit, breaks 
 test('ineligible open Jobs explain why: not qualified, not available, continuous limit', () => {
   const data = createSeedData();
   const fr = (job, t) => interest.checkEligibility(data, job.id, t).result.failures.map((f) => f.fr);
-  assert.deepEqual(fr(openAt(data, '2026-11-24', h(16), 'Voice'), JAMIE), ['FR-26']);
+  assert.deepEqual(fr(openAt(data, '2026-11-24', h(16), 'Violin'), JAMIE), ['FR-26']);
   assert.deepEqual(fr(openAt(data, '2026-11-24', h(19), 'Piano'), JAMIE), ['FR-19']);
   const monPiano = openAt(data, '2026-11-23', h(13, 30), 'Piano');
   assert.deepEqual(fr(monPiano, ALICE), ['FR-25'], 'Alice has no 1 h break around 1:30 PM');
@@ -216,9 +216,9 @@ test('indicate interest -> Manager approves -> Job allocated once; duplicates an
 test('pending requests count toward conflicts, and approval re-checks the rules', () => {
   let data = createSeedData();
   const piano = openAt(data, '2026-11-23', h(13, 30), 'Piano');
-  const guitar = openAt(data, '2026-11-23', h(13, 30), 'Guitar');
+  const trumpet = openAt(data, '2026-11-23', h(13, 30), 'Trumpet');
   data = interest.indicateInterest(data, JAMIE, piano.id).data;
-  const fr = interest.checkEligibility(data, guitar.id, JAMIE).result.failures.map((f) => f.fr);
+  const fr = interest.checkEligibility(data, trumpet.id, JAMIE).result.failures.map((f) => f.fr);
   assert.deepEqual(fr, ['FR-22'], 'same-time Job conflicts with the pending request');
   // Approval is re-validated: if Jamie's Availability is removed, approval is refused.
   data = { ...data, availability: data.availability.filter((a) => !(a.teacherId === JAMIE && a.date === '2026-11-23')) };
@@ -229,7 +229,7 @@ test('pending requests count toward conflicts, and approval re-checks the rules'
 
 test('withdraw and decline', () => {
   let data = createSeedData();
-  const job = openAt(data, '2026-11-27', h(15), 'Guitar');
+  const job = openAt(data, '2026-11-27', h(15), 'Trumpet');
   data = interest.indicateInterest(data, JAMIE, job.id).data;
   const id = data.interests[0].id;
   assert.equal(interest.withdrawInterest(data, ALICE, id).ok, false, 'only own requests');

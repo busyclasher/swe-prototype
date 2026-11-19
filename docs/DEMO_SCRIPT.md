@@ -34,19 +34,19 @@ Every value below comes from the default dataset (demo date Mon 23 Nov 2026).
 
 | Teacher | Date | Start | Instrument | Studio | Broken rule |
 |---|---|---|---|---|---|
-| Isaac Koh | Wed 25 Nov | 6:00 PM | Violin | Studio 3 | FR-26 not qualified |
+| Isaac Koh | Wed 25 Nov | 6:00 PM | Piano | Studio 3 | FR-26 not qualified |
 | Daniel Wong | Tue 24 Nov | 3:00 PM | Drums | Studio 3 | FR-24 no drum kit |
 | Chloe Ng | Mon 23 Nov | 1:00 PM | Violin | Studio 4 | FR-25 continuous limit (8 h block) |
-| Isaac Koh | Thu 26 Nov | 6:00 PM | Guitar | Studio 3 | FR-21 public holiday |
-| Daniel Wong | Tue 24 Nov | 8:30 AM | Guitar | Studio 2 | FR-20 before opening |
-| Isaac Koh | Sat 28 Nov | 10:00 AM | Guitar | Studio 4 | FR-19 no Availability |
-| Isaac Koh | Tue 24 Nov | 7:00 PM | Guitar | Studio 1 | FR-22 Teacher overlap |
-| Isaac Koh | Wed 25 Nov | 6:00 PM | Guitar | Studio 2 | FR-23 Studio in use (Farah) |
+| Isaac Koh | Thu 26 Nov | 6:00 PM | Trumpet | Studio 3 | FR-21 public holiday |
+| Daniel Wong | Tue 24 Nov | 8:30 AM | Trumpet | Studio 2 | FR-20 before opening |
+| Isaac Koh | Sat 28 Nov | 10:00 AM | Trumpet | Studio 4 | FR-19 no Availability |
+| Isaac Koh | Tue 24 Nov | 7:00 PM | Trumpet | Studio 1 | FR-22 Teacher overlap |
+| Isaac Koh | Wed 25 Nov | 6:00 PM | Trumpet | Studio 2 | FR-23 Studio in use (Farah) |
 
    Each result names the FR, explains the exact reason, and shows the full 8-rule checklist. Nothing is saved.
    *Tip:* the comparison card's "Use in allocation form" fills the Teacher field.
-4. **Success:** Isaac Koh · Wed 25 Nov · 6:00 PM · Guitar · Studio 3. The allocation is confirmed, Isaac's chip goes from 2.0 h to 2.5 h, and the Job list shows "Just allocated". Submit the same again and FR-22 now fails.
-5. *Optional:* In **Pending allocation**, choose the Friday Guitar Job (J-2354, 27 Nov, 3:00 PM, Studio 4). Select **Isaac Koh**, whose option shows **All 8 rules pass**, and allocate it. Alice's rejected Monday Voice Job is also visible; loading it demonstrates that a qualified Teacher may still fail Availability (FR-19). Log out.
+4. **Success:** Isaac Koh · Wed 25 Nov · 6:00 PM · Trumpet · Studio 3. The allocation is confirmed, Isaac's chip goes from 2.0 h to 2.5 h, and the Job list shows "Just allocated". Submit the same again and FR-22 now fails.
+5. *Optional:* In **Pending allocation**, choose the Friday Trumpet Job (J-2354, 27 Nov, 3:00 PM, Studio 4). Select **Isaac Koh**, whose option shows **All 8 rules pass**, and allocate it. Alice's rejected Monday Violin Job is also visible; loading it demonstrates that a qualified Teacher may still fail Availability (FR-19). Log out.
 
 ## 4b. Unassigned Teacher and continuous-teaching rule (2 min)
 Use **Demo tools → Switch account** to change user without retyping passwords.
@@ -54,7 +54,7 @@ Use **Demo tools → Switch account** to change user without retyping passwords.
 2. **Invalid adjacent Job (Alice):** Available Jobs › **Mon 23 Nov 1:30 PM Piano, Studio 5 (J-2355)**. Shown as *Not eligible*: "This Job would exceed the maximum continuous teaching duration… 6 h (10:00 AM – 4:00 PM)". Indicate Interest is disabled.
 3. **Empty Teacher:** Switch to **Jamie Lim** (`jamie.lim / teacher123`). Dashboard and My Jobs show **No jobs allocated yet**.
 4. Available Jobs › select **J-2355** (now *Eligible* for Jamie) › **Indicate Interest** › **Confirm interest**. The request shows *Awaiting Manager approval*; the Job is not allocated yet.
-   - *Validation examples:* J-2357 Voice (FR-26 not qualified), J-2358 Tue 7:00 PM (FR-19 not available), J-2356 Mon 1:30 PM Guitar (FR-22, clashes with the pending J-2355 request).
+   - *Validation examples:* J-2357 Violin (FR-26 not qualified), J-2358 Tue 7:00 PM (FR-19 not available), J-2356 Mon 1:30 PM Trumpet (FR-22, clashes with the pending J-2355 request).
 5. Switch to **Grace Ho**. The Dashboard notes 1 request; Job Allocation › **Teacher interest requests** › **Approve and allocate**. All eight rules are re-checked; competing requests for the Job are closed, so it can never be allocated twice.
 6. Switch back to Jamie. The request shows *Approved*, and the Job is under My Jobs and Workload.
 7. **Reset demo data** to repeat the scenario.

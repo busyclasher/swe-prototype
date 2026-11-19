@@ -94,14 +94,14 @@ Severity: **High** = can break the live demo or contradict the brief. **Medium**
 | Job | Slot | Every qualified Teacher fails on |
 |---|---|---|
 | J-2353 | Wed 25 Nov, 11:00 AM, Piano, Studio 4 | Alice and Chloe: FR-22; Farah: FR-19, FR-25; Gabriel and Hui Min: FR-19 |
-| J-2354 | Fri 27 Nov, 7:00 PM, Guitar, Studio 3 | **Studio 3 is already used by allocated Job J-2261 at the same time**; Isaac fails only FR-23 |
+| J-2354 | Fri 27 Nov, 7:00 PM, Trumpet, Studio 3 | **Studio 3 is already used by allocated Job J-2261 at the same time**; Isaac fails only FR-23 |
 
 J-2354 is a data inconsistency: an Unallocated Job and an allocated Job share a Studio and time. If a lecturer asks the team to "allocate one of the Unallocated Jobs", it cannot be done without changing its details.
 **Fix:** move both Jobs to slots where at least one Teacher passes all eight rules (for example, J-2354 to a free Studio so Isaac can take it). Add a unit test: *every seeded Unallocated Job is allocatable by at least one Teacher*.
 
 ### F2 — High — Demo script step 4.5 fails as written
-`docs/DEMO_SCRIPT.md` §4 step 5 says to load Alice's rejected Job (J-2053, Mon 23 Nov 10:00 AM, Voice, Studio 3) and "allocate it to someone qualified". Probe result: **every Teacher except Alice fails** (Farah and Isaac fail FR-19 because neither has Availability at 10:00 AM on Monday; everyone else also fails FR-26). Doing this live will show a rejection where the script expects a success.
-**Fix (pick one):** (a) extend a Voice/Piano Teacher's Monday Availability in the seed so they can cover 10:00 AM, (b) change the script to choose a different Job to reject, or (c) present the step as an intended FR-19 failure.
+`docs/DEMO_SCRIPT.md` §4 step 5 says to load Alice's rejected Job (J-2053, Mon 23 Nov 10:00 AM, Violin, Studio 3) and "allocate it to someone qualified". Probe result: **every Teacher except Alice fails** (Farah and Isaac fail FR-19 because neither has Availability at 10:00 AM on Monday; everyone else also fails FR-26). Doing this live will show a rejection where the script expects a success.
+**Fix (pick one):** (a) extend a Violin/Piano Teacher's Monday Availability in the seed so they can cover 10:00 AM, (b) change the script to choose a different Job to reject, or (c) present the step as an intended FR-19 failure.
 
 ### F3 — Medium — Loading an Unallocated Job lets the Manager change its details
 In `JobAllocation.jsx`, `loadJob` fills the form, but date, time, Instrument and Studio stay editable. `allocateJob` then overwrites the existing Job with the new values. This goes beyond "allocate Jobs to Teachers" (FR-12): it edits the Job itself. See Q1.

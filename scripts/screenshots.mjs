@@ -231,13 +231,13 @@ await step('UC07 compare up to three Teachers; fourth is refused (FR-13-18)', as
 });
 
 const scenarios = [
-  ['FR-26', { date: '2026-11-25', start: '6:00 PM', instrument: 'Violin', studio: 'Studio 3', teacher: 'T08' }, 'is not qualified to teach Violin'],
+  ['FR-26', { date: '2026-11-25', start: '6:00 PM', instrument: 'Piano', studio: 'Studio 3', teacher: 'T08' }, 'is not qualified to teach Piano'],
   ['FR-24', { date: '2026-11-24', start: '3:00 PM', instrument: 'Drums', studio: 'Studio 3', teacher: 'T04' }, 'Drum Jobs must be held in the Studio with a drum kit'],
-  ['FR-21', { date: '2026-11-26', start: '6:00 PM', instrument: 'Guitar', studio: 'Studio 3', teacher: 'T08' }, 'is a public holiday'],
-  ['FR-20', { date: '2026-11-24', start: '8:30 AM', instrument: 'Guitar', studio: 'Studio 2', teacher: 'T04' }, 'starts before opening'],
-  ['FR-19', { date: '2026-11-28', start: '10:00 AM', instrument: 'Guitar', studio: 'Studio 4', teacher: 'T08' }, 'has no Availability on'],
-  ['FR-22', { date: '2026-11-24', start: '7:00 PM', instrument: 'Guitar', studio: 'Studio 1', teacher: 'T08' }, 'already has Job'],
-  ['FR-23', { date: '2026-11-25', start: '6:00 PM', instrument: 'Guitar', studio: 'Studio 2', teacher: 'T08' }, 'is already in use by Job'],
+  ['FR-21', { date: '2026-11-26', start: '6:00 PM', instrument: 'Trumpet', studio: 'Studio 3', teacher: 'T08' }, 'is a public holiday'],
+  ['FR-20', { date: '2026-11-24', start: '8:30 AM', instrument: 'Trumpet', studio: 'Studio 2', teacher: 'T04' }, 'starts before opening'],
+  ['FR-19', { date: '2026-11-28', start: '10:00 AM', instrument: 'Trumpet', studio: 'Studio 4', teacher: 'T08' }, 'has no Availability on'],
+  ['FR-22', { date: '2026-11-24', start: '7:00 PM', instrument: 'Trumpet', studio: 'Studio 1', teacher: 'T08' }, 'already has Job'],
+  ['FR-23', { date: '2026-11-25', start: '6:00 PM', instrument: 'Trumpet', studio: 'Studio 2', teacher: 'T08' }, 'is already in use by Job'],
   ['FR-25', { date: '2026-11-23', start: '1:00 PM', instrument: 'Violin', studio: 'Studio 4', teacher: 'T03' }, 'continuous teaching block'],
 ];
 for (const [fr, input, text] of scenarios) {
@@ -252,7 +252,7 @@ for (const [fr, input, text] of scenarios) {
 
 await step('UC07 successful allocation updates schedule and Workload (FR-12)', async () => {
   const before = await page.getByRole('button', { name: /^Isaac Koh/ }).textContent();
-  await alloc(page, { date: '2026-11-25', start: '6:00 PM', instrument: 'Guitar', studio: 'Studio 3', teacher: 'T08' });
+  await alloc(page, { date: '2026-11-25', start: '6:00 PM', instrument: 'Trumpet', studio: 'Studio 3', teacher: 'T08' });
   await expectText(page, 'allocated');
   await page.locator('.alert-success', { hasText: 'Isaac Koh' }).waitFor();
   await page.getByText('Just allocated').first().waitFor();
@@ -262,7 +262,7 @@ await step('UC07 successful allocation updates schedule and Workload (FR-12)', a
 });
 
 await step('Same allocation again is now rejected for Teacher overlap (FR-22)', async () => {
-  await alloc(page, { date: '2026-11-25', start: '6:00 PM', instrument: 'Guitar', studio: 'Studio 3', teacher: 'T08' });
+  await alloc(page, { date: '2026-11-25', start: '6:00 PM', instrument: 'Trumpet', studio: 'Studio 3', teacher: 'T08' });
   await page.locator('.fail-list').getByText('FR-22').waitFor();
 });
 
@@ -274,7 +274,7 @@ await step('Rejected Job appears as Unallocated to the Manager and can be loaded
 });
 
 await step('Pending Jobs can be assigned directly and reset clears local state', async () => {
-  const pending = page.locator('.pending-job', { hasText: 'Guitar' });
+  const pending = page.locator('.pending-job', { hasText: 'J-2354' });
   await pending.click();
   const form = page.locator('form', { hasText: 'Validate and allocate Job' });
   if (await form.getByLabel('Teacher', { exact: false }).inputValue()) throw new Error('Loading a Job retained a stale Teacher');

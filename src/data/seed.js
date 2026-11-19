@@ -10,7 +10,7 @@ import { isLateSubmission } from '../lib/availability.js';
 import { validateAllocation } from '../lib/validation.js';
 import { JOB_STATUS } from '../lib/workload.js';
 
-export const INSTRUMENTS = ['Piano', 'Voice', 'Violin', 'Cello', 'Flute', 'Guitar', 'Drums'];
+export const INSTRUMENTS = ['Piano', 'Drums', 'Violin', 'Trumpet'];
 
 const STUDIOS = [
   { id: 'S1', name: 'Studio 1', hasDrumKit: false },
@@ -37,14 +37,14 @@ const h = (hh, mm = 0) => hh * 60 + mm;
 const TEACHERS = [
   {
     id: 'T01', name: 'Alice Tan', username: 'alice.tan', email: 'alice.tan@sonara.example',
-    profile: { instruments: ['Piano', 'Voice'], expertise: ['ABRSM exam preparation', 'Classical repertoire'], yearsExperience: 9 },
+    profile: { instruments: ['Piano', 'Violin'], expertise: ['ABRSM exam preparation', 'Classical repertoire'], yearsExperience: 9 },
     studios: ['S3', 'S4', 'S1', 'S2'], fill: 0.85,
     pattern: [{ days: [0, 2, 4, 5], blocks: [[h(10), h(13)], [h(14), h(16)]], avail: [h(9, 30), h(17)] }],
     decAvailUntil: '2026-12-13', decSubmittedOn: '2026-11-12',
   },
   {
     id: 'T02', name: 'Benjamin Lee', username: 'benjamin.lee', email: 'benjamin.lee@sonara.example',
-    profile: { instruments: ['Guitar', 'Drums'], expertise: ['Rock and pop', 'Rhythm training'], yearsExperience: 6 },
+    profile: { instruments: ['Trumpet', 'Drums'], expertise: ['Jazz and brass band', 'Rhythm training'], yearsExperience: 6 },
     studios: ['S5', 'S4', 'S2', 'S1'], fill: 0.9,
     pattern: [{ days: [0, 1, 2, 3, 4], blocks: [[h(14), h(18)], [h(19), h(21)]], avail: [h(13, 30), h(21)] }],
     decAvailUntil: null, // has not submitted December Availability yet
@@ -58,7 +58,7 @@ const TEACHERS = [
   },
   {
     id: 'T04', name: 'Daniel Wong', username: 'daniel.wong', email: 'daniel.wong@sonara.example',
-    profile: { instruments: ['Drums', 'Guitar'], expertise: ['Jazz drumming', 'Grade exam preparation'], yearsExperience: 4 },
+    profile: { instruments: ['Drums', 'Trumpet'], expertise: ['Jazz drumming', 'Grade exam preparation'], yearsExperience: 4 },
     studios: ['S5', 'S1', 'S2', 'S3'], fill: 0.8,
     pattern: [
       { days: [1, 3], blocks: [[h(10), h(13)]], avail: [h(8), h(17)] },
@@ -68,28 +68,28 @@ const TEACHERS = [
   },
   {
     id: 'T05', name: 'Farah Rahman', username: 'farah.rahman', email: 'farah.rahman@sonara.example',
-    profile: { instruments: ['Voice', 'Piano'], expertise: ['Musical theatre', 'Vocal health'], yearsExperience: 7 },
+    profile: { instruments: ['Violin', 'Piano'], expertise: ['Musical theatre', 'String technique'], yearsExperience: 7 },
     studios: ['S2', 'S1', 'S3', 'S4'], fill: 1,
     pattern: [{ days: [0, 1, 2, 3, 4, 5, 6], blocks: [[h(12), h(16)], [h(17), h(20, 30)]], avail: [h(11, 30), h(21)] }],
     decAvailUntil: HORIZON_END, decSubmittedOn: '2026-11-15',
   },
   {
     id: 'T06', name: 'Gabriel Lim', username: 'gabriel.lim', email: 'gabriel.lim@sonara.example',
-    profile: { instruments: ['Cello', 'Piano'], expertise: ['Chamber music'], yearsExperience: 3 },
+    profile: { instruments: ['Violin', 'Piano'], expertise: ['Chamber music'], yearsExperience: 3 },
     studios: ['S4', 'S3', 'S1', 'S2'], fill: 0.7,
     pattern: [{ days: [1, 3], blocks: [[h(16), h(19)]], avail: [h(15), h(20)] }],
     decAvailUntil: HORIZON_END, decSubmittedOn: '2026-11-19',
   },
   {
     id: 'T07', name: 'Hui Min Chua', username: 'huimin.chua', email: 'huimin.chua@sonara.example',
-    profile: { instruments: ['Flute', 'Piano'], expertise: ['Music theory', 'Sight-reading'], yearsExperience: 5 },
+    profile: { instruments: ['Trumpet', 'Piano'], expertise: ['Music theory', 'Sight-reading'], yearsExperience: 5 },
     studios: ['S3', 'S1', 'S2', 'S4'], fill: 0.75,
     pattern: [{ days: [1, 4], blocks: [[h(17), h(20)]], avail: [h(16, 30), h(21)] }],
     decAvailUntil: HORIZON_END, decSubmittedOn: '2026-11-08',
   },
   {
     id: 'T08', name: 'Isaac Koh', username: 'isaac.koh', email: 'isaac.koh@sonara.example',
-    profile: { instruments: ['Guitar', 'Voice'], expertise: ['Songwriting', 'Acoustic guitar'], yearsExperience: 2 },
+    profile: { instruments: ['Trumpet', 'Violin'], expertise: ['Brass ensemble', 'Folk fiddle'], yearsExperience: 2 },
     studios: ['S4', 'S1', 'S2', 'S3'], fill: 1,
     pattern: [
       { days: [1, 3], blocks: [[h(18), h(20)]], avail: [h(15), h(21)] },
@@ -102,7 +102,7 @@ const TEACHERS = [
     // start of the presentation. No teaching blocks, so job generation skips
     // this Teacher and the random sequence for everyone else is unchanged.
     id: 'T09', name: 'Jamie Lim', username: 'jamie.lim', email: 'jamie.lim@sonara.example',
-    profile: { instruments: ['Piano', 'Guitar'], expertise: ['Beginner foundations', 'Pop accompaniment'], yearsExperience: 1 },
+    profile: { instruments: ['Piano', 'Trumpet'], expertise: ['Beginner foundations', 'Pop accompaniment'], yearsExperience: 1 },
     studios: [], fill: 0,
     pattern: [{ days: [0, 1, 2, 3, 4], blocks: [], avail: [h(9), h(18)] }],
     decAvailUntil: HORIZON_END, decSubmittedOn: '2026-11-14',
@@ -211,10 +211,10 @@ export function createSeedData() {
   const cw0 = weekStart(DEMO_TODAY);
   const unallocated = [
     { date: addDays(cw0, 2), start: h(9, 30), instrument: 'Piano', studioId: 'S4' }, // eligible for Jamie
-    { date: addDays(cw0, 4), start: h(15), instrument: 'Guitar', studioId: 'S4' }, // eligible for Jamie
+    { date: addDays(cw0, 4), start: h(15), instrument: 'Trumpet', studioId: 'S4' }, // eligible for Jamie
     { date: cw0, start: h(13, 30), instrument: 'Piano', studioId: 'S5' }, // Jamie eligible; Alice breaks FR-25 (no 1 h break)
-    { date: cw0, start: h(13, 30), instrument: 'Guitar', studioId: 'S4' }, // same time: clashes (FR-22) once Jamie has the Piano Job
-    { date: addDays(cw0, 1), start: h(16), instrument: 'Voice', studioId: 'S3' }, // Jamie not qualified (FR-26)
+    { date: cw0, start: h(13, 30), instrument: 'Trumpet', studioId: 'S4' }, // same time: clashes (FR-22) once Jamie has the Piano Job
+    { date: addDays(cw0, 1), start: h(16), instrument: 'Violin', studioId: 'S3' }, // Jamie not qualified (FR-26)
     { date: addDays(cw0, 1), start: h(19), instrument: 'Piano', studioId: 'S3' }, // Jamie not available after 6 PM (FR-19)
   ];
   for (const u of unallocated) {

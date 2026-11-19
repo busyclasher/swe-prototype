@@ -29,7 +29,7 @@
 | FR-23 | rule 5 | Manager | Isaac, Wed 25 Nov 6:00 PM, Studio 2 | "Studio 2 is already in use by Job J-… (Farah Rahman…)" | U + E |
 | FR-24 | rule 6 | Manager | Daniel, Drums, Studio 3 | "Drum Jobs must be held in the Studio with a drum kit (Studio 5)…" | U + E |
 | FR-25 | rule 7 | Manager | Chloe, Mon 23 Nov 1:00 PM | "…continuous teaching block of 8 h (9:00 AM – 5:00 PM)…limit is 4 h…break of at least 1 h" | U (incl. 4 h/4.5 h/1 h-break edges) + E |
-| FR-26 | rule 8 | Manager | Isaac, Violin | "Isaac Koh is not qualified to teach Violin. Qualified Instruments: Guitar, Voice." | U + E |
+| FR-26 | rule 8 | Manager | Isaac, Piano | "Isaac Koh is not qualified to teach Piano. Qualified Instruments: Trumpet, Violin." | U + E |
 | FR-27 | Job Allocation › "Validation result" | Manager | Submit any invalid allocation | "Allocation rejected — n rules broken", each with FR id + specific reason, plus the full 8-rule checklist; nothing saved | E: all 8 scenarios |
 | FR-28 | My Jobs › select Job › "Reject Job" | Teacher | Select own upcoming Job, Reject Job | Confirmation dialog opens | E: UC04 |
 | FR-29 | Rejection dialog | Teacher | — | "Please discuss this Job with your Manager before confirming the rejection." with Cancel / Confirm rejection | E: UC04 |
